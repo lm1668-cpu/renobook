@@ -55,21 +55,57 @@
       transform: translateY(-2px);
     }
     .ui-input {
+      display: block;
       width: 100%;
-      height: 40px;
+      min-width: 0;
+      max-width: 100%;
+      height: 42px;
+      min-height: 42px;
+      max-height: 42px;
       box-sizing: border-box;
       border: 1px solid #cbd5e1;
       border-radius: 10px;
-      padding: 8px 12px;
+      padding: 0 12px;
       font-size: 13.5px;
-      line-height: 1.25;
+      line-height: 40px;
       background-color: #f8fafc;
       transition: all 0.18s ease;
       color: #0f172a;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    select.ui-input {
+      padding-right: 28px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 9px center;
+      background-size: 14px 14px;
+    }
+    input[type="date"].ui-input,
+    input[type="month"].ui-input {
+      display: inline-flex;
+      align-items: center;
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      height: 42px !important;
+      min-height: 42px !important;
+      max-height: 42px !important;
+      padding: 0 10px;
+      line-height: 40px;
+      overflow: hidden;
+    }
+    input[type="date"].ui-input::-webkit-date-and-time-value,
+    input[type="month"].ui-input::-webkit-date-and-time-value {
+      text-align: left;
+      margin: 0;
     }
     textarea.ui-input {
       height: auto;
       min-height: 84px;
+      max-height: none;
+      padding: 8px 12px;
+      line-height: 1.45;
     }
     .ui-input:focus {
       background-color: #ffffff;
@@ -772,7 +808,7 @@
           </div>
         </div>
 
-        <div class="ui-card p-3.5 sm:p-4 min-w-0 border-l-4 border-l-emerald-500 bg-emerald-50/20">
+        <div class="ui-card p-3.5 sm:p-4 min-w-0 bg-emerald-50/20">
           <span class="text-xs text-slate-800 font-extrabold block">戶口實際結餘 (已收 - 總成本)</span>
           <div class="text-base sm:text-lg font-extrabold text-emerald-700 mt-1 font-mono break-all" id="det-cash-balance">HK$ 0</div>
           <div class="text-[11px] mt-2 space-y-1 font-mono border-t border-emerald-200/60 pt-1.5">
@@ -907,16 +943,16 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
-            <div class="flex flex-col justify-end min-w-0">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 sm:gap-4 items-end">
+            <div class="flex flex-col justify-end min-w-0 w-full overflow-hidden">
               <label class="ui-label" id="qf-date-label"><span class="text-rose-500">*</span> 日期</label>
-              <input type="date" id="qf-date" required class="ui-input !bg-white">
+              <input type="date" id="qf-date" required class="ui-input !bg-white font-mono">
             </div>
-            <div class="flex flex-col justify-end min-w-0">
+            <div class="flex flex-col justify-end min-w-0 w-full overflow-hidden">
               <label class="ui-label" id="qf-amount-label"><span class="text-rose-500">*</span> 支出金額 (HK$)</label>
               <input type="number" step="0.01" min="0.01" id="qf-amount" required placeholder="0.00" class="ui-input !bg-white font-mono font-bold text-slate-900">
             </div>
-            <div class="flex flex-col justify-end min-w-0">
+            <div class="flex flex-col justify-end min-w-0 w-full overflow-hidden">
               <label class="ui-label" id="qf-method-label">支付方法</label>
               <select id="qf-method" class="ui-input !bg-white font-medium">
                 <option value="cash">現金 (Cash)</option>
@@ -1092,27 +1128,27 @@
 
       <!-- 👷 日薪師傅工人登記表 & 📅 每半個月結算一次嘅出糧表 (只喺記錄師傅日工數「人工表」顯示 #9, #10, #11) -->
       <div id="worker-payroll-section" class="ui-card p-5 space-y-5 border-2 border-blue-900/15 hidden">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-3">
-          <div>
+        <div class="flex flex-col lg:flex-row justify-between items-stretch lg:items-center gap-3 border-b border-slate-100 pb-3.5">
+          <div class="min-w-0 flex-1">
             <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 text-[11px] font-extrabold mb-1">👷 師傅出糧及人事管理專區（人工表專屬）</div>
             <h3 class="text-base sm:text-lg font-extrabold text-slate-900">每半個月結算出糧表 · 單據補交 · 核對後自動按工程日數拆帳入開支表</h3>
             <p class="text-xs text-slate-500">流程：① 揀半月結算期 ➔ ② 導出 CSV 打印核對 ➔ ③ 補交出糧單據相片 ➔ ④ 撳「核對無誤 · 按工程日數寫入開支表」自動拆帳入各工程「公司-日薪工人」開支！</p>
           </div>
-          <div class="flex gap-1.5 bg-slate-100 p-1 rounded-xl shrink-0">
-            <button type="button" onclick="switchWorkerSubTab('payroll')" id="wtab-btn-payroll" class="px-3 py-1.5 rounded-lg bg-blue-950 text-amber-400 font-extrabold text-xs transition whitespace-nowrap">📅 半月結算出糧表</button>
-            <button type="button" onclick="switchWorkerSubTab('registry')" id="wtab-btn-registry" class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 font-bold text-xs transition whitespace-nowrap">📋 工人登記表及履歷</button>
+          <div class="grid grid-cols-2 sm:inline-flex items-center gap-2 bg-slate-100 p-1.5 rounded-2xl shrink-0 w-full sm:w-auto border border-slate-200/80">
+            <button type="button" onclick="switchWorkerSubTab('payroll')" id="wtab-btn-payroll" class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-950 text-amber-400 font-extrabold text-xs shadow-sm transition whitespace-nowrap cursor-pointer">📅 半月結算出糧表</button>
+            <button type="button" onclick="switchWorkerSubTab('registry')" id="wtab-btn-registry" class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-transparent text-slate-600 hover:text-slate-900 hover:bg-white/70 font-bold text-xs transition whitespace-nowrap cursor-pointer">📋 工人登記表及履歷</button>
           </div>
         </div>
 
         <!-- Sub-view A: 每半個月結算出糧表 (#11 修正走位、對齊按鈕、WhatsApp導出、移除電話銀行欄、核對後按工程日數寫入開支表) -->
         <div id="wtab-view-payroll" class="space-y-4">
           <div class="bg-slate-50 p-3.5 rounded-2xl border border-slate-200 space-y-3">
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
-              <div class="flex flex-col justify-end min-w-0">
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 items-end">
+              <div class="flex flex-col justify-end min-w-0 w-full overflow-hidden">
                 <label class="ui-label">1. 結算月份</label>
                 <input type="month" id="pay-month" onchange="renderSemiMonthlyPayroll()" class="ui-input !bg-white font-mono font-bold" />
               </div>
-              <div class="flex flex-col justify-end min-w-0">
+              <div class="flex flex-col justify-end min-w-0 w-full overflow-hidden">
                 <label class="ui-label">2. 半月結算期</label>
                 <select id="pay-half" onchange="renderSemiMonthlyPayroll()" class="ui-input !bg-white font-bold text-blue-950">
                   <option value="FIRST">上半月 (1號 至 15號)</option>
@@ -1120,7 +1156,7 @@
                   <option value="FULL">全月總結 (1號 至 月底)</option>
                 </select>
               </div>
-              <div class="flex flex-col justify-end min-w-0">
+              <div class="flex flex-col justify-end min-w-0 w-full overflow-hidden">
                 <label class="ui-label">3. 篩選特定師傅</label>
                 <select id="pay-worker-filter" onchange="renderSemiMonthlyPayroll()" class="ui-input !bg-white font-bold">
                   <option value="ALL">👷 全部日薪師傅</option>
@@ -1211,12 +1247,11 @@
             <table class="w-full text-left text-xs">
               <thead class="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 whitespace-nowrap">
                 <tr>
-                  <th class="py-2.5 px-3">師傅姓名</th>
-                  <th class="py-2.5 px-3 text-right">日薪人工</th>
-                  <th class="py-2.5 px-3">WhatsApp 電話</th>
-                  <th class="py-2.5 px-3">銀行帳戶 / FPS 資料</th>
+                  <th class="py-2.5 px-3 w-36">師傅姓名</th>
+                  <th class="py-2.5 px-3 text-right w-32">日薪人工</th>
+                  <th class="py-2.5 px-3 w-36">WhatsApp 電話</th>
                   <th class="py-2.5 px-3">歷史參與工程及累計總工數 (喺邊度做過嘢)</th>
-                  <th class="py-2.5 px-3 text-center">操作</th>
+                  <th class="py-2.5 px-3 text-center w-28">操作</th>
                 </tr>
               </thead>
               <tbody id="worker-registry-tbody" class="divide-y divide-slate-100"></tbody>
@@ -1390,8 +1425,8 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
-          <div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 items-end bg-slate-50 p-3.5 rounded-2xl border border-slate-200">
+          <div class="flex flex-col justify-end min-w-0 w-full overflow-hidden">
             <label class="ui-label text-blue-900 font-bold">📑 單據類型</label>
             <select id="doc-type" onchange="renderInvoicePreview()" class="ui-input font-bold !bg-white">
               <option value="QUOTATION">QUOTATION (報價單)</option>
@@ -1399,7 +1434,7 @@
               <option value="RECEIPT">RECEIPT (正式收據)</option>
             </select>
           </div>
-          <div>
+          <div class="flex flex-col justify-end min-w-0 w-full overflow-hidden">
             <label class="ui-label">💰 找數狀態</label>
             <select id="payment-status" onchange="renderInvoicePreview()" class="ui-input font-bold !bg-white">
               <option value="UNPAID">🔴 未付款 (Unpaid)</option>
@@ -1407,13 +1442,13 @@
               <option value="PAID">🟢 已付清 (蓋 PAID 印)</option>
             </select>
           </div>
-          <div>
+          <div class="flex flex-col justify-end min-w-0 w-full overflow-hidden">
             <label class="ui-label">單據編號 (REF NO.)</label>
             <input type="text" id="inv-number" value="23" oninput="renderInvoicePreview()" class="ui-input font-mono font-bold !bg-white" />
           </div>
-          <div>
+          <div class="flex flex-col justify-end min-w-0 w-full overflow-hidden">
             <label class="ui-label">單據日期 (DATE)</label>
-            <input type="date" id="inv-date" onchange="renderInvoicePreview()" class="ui-input !bg-white" />
+            <input type="date" id="inv-date" onchange="renderInvoicePreview()" class="ui-input font-mono !bg-white" />
           </div>
         </div>
 
@@ -1624,9 +1659,9 @@
         <button type="button" onclick="switchMainTab('editor')" class="px-3.5 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold rounded-xl text-xs whitespace-nowrap shrink-0 shadow">✏️ 立即去開新單據</button>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <div class="ui-card p-3.5 sm:p-4 border-l-4 border-l-blue-900 min-w-0 overflow-hidden"><div class="text-xs font-semibold text-slate-500">已開立發票/收據總額</div><div id="stat-total-invoiced" class="text-lg sm:text-2xl font-extrabold font-mono text-slate-900 mt-1 truncate">$0.00</div></div>
-        <div class="ui-card p-3.5 sm:p-4 border-l-4 border-l-emerald-600 min-w-0 overflow-hidden"><div class="text-xs font-semibold text-emerald-600">🟢 已收清款項 (Paid)</div><div id="stat-total-paid" class="text-lg sm:text-2xl font-extrabold font-mono text-emerald-700 mt-1 truncate">$0.00</div></div>
-        <div class="ui-card p-3.5 sm:p-4 border-l-4 border-l-red-500 min-w-0 overflow-hidden"><div class="text-xs font-semibold text-red-600">🔴 尚欠未收總額 (Outstanding)</div><div id="stat-total-unpaid" class="text-lg sm:text-2xl font-extrabold font-mono text-red-600 mt-1 truncate">$0.00</div></div>
+        <div class="ui-card p-3.5 sm:p-4 min-w-0 overflow-hidden"><div class="text-xs font-semibold text-slate-500">已開立發票/收據總額</div><div id="stat-total-invoiced" class="text-lg sm:text-2xl font-extrabold font-mono text-slate-900 mt-1 truncate">$0.00</div></div>
+        <div class="ui-card p-3.5 sm:p-4 min-w-0 overflow-hidden"><div class="text-xs font-semibold text-emerald-600">🟢 已收清款項 (Paid)</div><div id="stat-total-paid" class="text-lg sm:text-2xl font-extrabold font-mono text-emerald-700 mt-1 truncate">$0.00</div></div>
+        <div class="ui-card p-3.5 sm:p-4 min-w-0 overflow-hidden"><div class="text-xs font-semibold text-red-600">🔴 尚欠未收總額 (Outstanding)</div><div id="stat-total-unpaid" class="text-lg sm:text-2xl font-extrabold font-mono text-red-600 mt-1 truncate">$0.00</div></div>
       </div>
       <div class="ui-card p-5">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-4 pb-3 border-b border-slate-100">
@@ -2528,26 +2563,26 @@ COMMIT;
         <!-- 編輯表單區 (點選下方任何一筆紀錄即自動帶入此表單修改並儲存回資料庫) -->
         <form id="admin-record-edit-form" onsubmit="submitAdminRecordEdit(event)" class="p-4 rounded-2xl bg-amber-50/70 border-2 border-amber-300 space-y-3">
           <div class="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200 pb-2">
-            <span class="text-xs font-extrabold text-amber-950" id="adm-edit-form-title">✏️ 請從下方列表點選「編輯」載入要修改嘅紀錄（或直接輸入 ID 修改）</span>
+            <span class="text-xs font-extrabold text-amber-950" id="adm-edit-form-title">✏️ 請從下方列表點選「編輯」載入要修改嘅紀錄</span>
             <span class="text-[11px] font-mono text-slate-500" id="adm-edit-record-badge">未選擇紀錄</span>
           </div>
           <input type="hidden" id="adm-edit-id" />
           <input type="hidden" id="adm-edit-table" value="expenses" />
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
-            <div class="flex flex-col justify-end min-w-0">
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 items-end">
+            <div class="flex flex-col justify-end min-w-0 w-full overflow-hidden">
               <label class="ui-label">日期 *</label>
               <input type="date" id="adm-edit-date" required class="ui-input !bg-white font-mono" />
             </div>
-            <div class="flex flex-col justify-end min-w-0">
+            <div class="flex flex-col justify-end min-w-0 w-full overflow-hidden">
               <label class="ui-label">工程編號 *</label>
               <select id="adm-edit-project" required class="ui-input !bg-white font-mono font-bold text-blue-950"></select>
             </div>
-            <div class="flex flex-col justify-end min-w-0" id="adm-edit-cat-wrap">
+            <div class="flex flex-col justify-end min-w-0 w-full overflow-hidden" id="adm-edit-cat-wrap">
               <label class="ui-label" id="adm-edit-cat-label">支出細類</label>
               <select id="adm-edit-category" class="ui-input !bg-white font-bold text-amber-800"></select>
             </div>
-            <div class="flex flex-col justify-end min-w-0">
+            <div class="flex flex-col justify-end min-w-0 w-full overflow-hidden">
               <label class="ui-label" id="adm-edit-party-label">收款人 / 供應商 / 判頭</label>
               <input type="text" id="adm-edit-party" placeholder="收款人或客戶名稱" class="ui-input !bg-white font-semibold" />
             </div>
@@ -3318,11 +3353,19 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;`;
       if (isPinUnlocked()) {
         await unlockAndBootApp();
       } else {
+        let savedUrl = DEFAULT_SUPABASE_URL, savedKey = DEFAULT_SUPABASE_KEY;
+        try {
+          savedUrl = localStorage.getItem('INV_SUPABASE_URL') || DEFAULT_SUPABASE_URL;
+          savedKey = localStorage.getItem('INV_SUPABASE_KEY') || DEFAULT_SUPABASE_KEY;
+        } catch (e) {}
+        initSupabase(savedUrl, savedKey);
         populateDropdowns();
         renderDashboardKPIs();
         renderProjectTable();
         renderProjectDetail();
         renderQuickRecentFeed();
+        // 第一次載入頁面即背景預先同步雲端總表筆數與全表紀錄，確保一打開總表已知總筆數、一按尾頁直達最尾紀錄
+        prefetchMasterLedgerCountsAndData();
       }
 
       window.addEventListener('focus', () => { if (isPinUnlocked()) loadAllData(true); });
@@ -4873,11 +4916,34 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;`;
     let masterLedgerPage = 1;
     let masterLedgerPageSize = 50;
     let masterLedgerLoaded = false;
+    let masterLedgerLoadPromise = null;
+    let masterLedgerExactCounts = {
+      expenses: 20497,
+      incomes: 1357,
+      labor: 10055
+    };
     let masterLedgerCache = {
       expenses: [],
       incomes: [],
       labor: []
     };
+
+    async function prefetchMasterLedgerCountsAndData() {
+      if (!supabaseClient) return;
+      try {
+        const [eCnt, iCnt, lCnt] = await Promise.all([
+          supabaseClient.from('expenses').select('id', { count: 'exact', head: true }),
+          supabaseClient.from('incomes').select('id', { count: 'exact', head: true }).lt('amount', 50000000),
+          supabaseClient.from('labor_days').select('id', { count: 'exact', head: true }).gt('work_days', 0)
+        ]);
+        if (typeof eCnt.count === 'number' && eCnt.count > 0) masterLedgerExactCounts.expenses = eCnt.count;
+        if (typeof iCnt.count === 'number' && iCnt.count > 0) masterLedgerExactCounts.incomes = iCnt.count;
+        if (typeof lCnt.count === 'number' && lCnt.count > 0) masterLedgerExactCounts.labor = lCnt.count;
+        updateDynamicHeroCounter();
+        renderMasterLedgerTable();
+      } catch (e) {}
+      loadMasterLedgerFromCloud(false);
+    }
 
     // 突破 Supabase PostgREST 單次請求 1,000 筆上限：自動分頁並行拉取全表所有紀錄 (支援 20,000+ 開支、全部收款及 10,000+ 師傅日工)
     async function fetchAllSupabaseTableRows(tableName, orderCol, filterFn = null, onProgress = null) {
@@ -4989,64 +5055,104 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;`;
 
     let isMasterLedgerLoading = false;
     async function loadMasterLedgerFromCloud(forceToast = false) {
-      if (isMasterLedgerLoading) return;
+      if (isMasterLedgerLoading && masterLedgerLoadPromise) {
+        return masterLedgerLoadPromise;
+      }
       isMasterLedgerLoading = true;
       const statusEl = document.getElementById('ml-cloud-status');
-      if (statusEl) statusEl.textContent = '⏳ 正在從 Supabase 雲端全量拉取所有開支、收款及師傅日工數據 (無筆數上限)...';
+      const knownTotal = masterLedgerExactCounts[currentMasterLedgerType] || 0;
+      if (statusEl) statusEl.textContent = `⏳ 正在從雲端載入全庫紀錄 (資料庫共 ${knownTotal.toLocaleString()} 筆)...`;
 
-      if (supabaseClient) {
-        try {
-          // 並行全量拉取：突破 Supabase 單次 1,000 筆限制，完整載入全部 20,497+ 筆開支、1,357+ 筆收款及 10,055+ 筆師傅日工
-          const [expAll, incAll, labAll] = await Promise.all([
-            fetchAllSupabaseTableRows('expenses', 'payment_date', null, (loadedCount) => {
-              if (statusEl) statusEl.textContent = `⏳ 正在從雲端分批載入全庫數據 (已讀取開支 ${loadedCount.toLocaleString()} 筆)...`;
-            }),
-            fetchAllSupabaseTableRows('incomes', 'payment_date'),
-            fetchAllSupabaseTableRows('labor_days', 'work_date')
-          ]);
+      masterLedgerLoadPromise = (async () => {
+        if (supabaseClient) {
+          try {
+            const [eCnt, iCnt, lCnt] = await Promise.all([
+              supabaseClient.from('expenses').select('id', { count: 'exact', head: true }),
+              supabaseClient.from('incomes').select('id', { count: 'exact', head: true }).lt('amount', 50000000),
+              supabaseClient.from('labor_days').select('id', { count: 'exact', head: true }).gt('work_days', 0)
+            ]);
+            if (typeof eCnt.count === 'number' && eCnt.count > 0) masterLedgerExactCounts.expenses = eCnt.count;
+            if (typeof iCnt.count === 'number' && iCnt.count > 0) masterLedgerExactCounts.incomes = iCnt.count;
+            if (typeof lCnt.count === 'number' && lCnt.count > 0) masterLedgerExactCounts.labor = lCnt.count;
+            renderMasterLedgerTable();
 
-          const expCombined = (expAll || [])
-            .filter(r => !( !r.payment_date && Number(r.amount || 0) === 0 && (!r.payee || r.payee === '-') ))
-            .map(r => ({ ...r, payment_date: sanitizeDateYearTypo(r.payment_date, r.project_code) }))
-            .sort((a, b) => compareDatesDescNullsLast(a.payment_date, b.payment_date, a.id, b.id));
-          if (expCombined.length > 0) {
-            masterLedgerCache.expenses = expCombined;
-          }
+            // 並行全量拉取：突破 Supabase 單次 1,000 筆限制，完整載入全部 20,497+ 筆開支、1,357+ 筆收款及 10,055+ 筆師傅日工
+            const [expAll, incAll, labAll] = await Promise.all([
+              fetchAllSupabaseTableRows('expenses', 'payment_date', null, (loadedCount) => {
+                if (statusEl) statusEl.textContent = `⏳ 正在載入全庫數據 (已讀取 ${loadedCount.toLocaleString()} / ${masterLedgerExactCounts.expenses.toLocaleString()} 筆開支)...`;
+              }),
+              fetchAllSupabaseTableRows('incomes', 'payment_date'),
+              fetchAllSupabaseTableRows('labor_days', 'work_date')
+            ]);
 
-          if (incAll && incAll.length > 0) {
-            // 過濾原 Excel 誤匯入之 1.95 億 COMPANY_OVERHEAD 總計列及無日期空行
-            masterLedgerCache.incomes = incAll
-              .filter(r => !(r.project_code === 'COMPANY_OVERHEAD' && !r.payment_date && Number(r.amount || 0) > 50000000))
-              .filter(r => !( !r.payment_date && Number(r.amount || 0) === 0 ))
+            const expCombined = (expAll || [])
+              .filter(r => !( !r.payment_date && Number(r.amount || 0) === 0 && (!r.payee || r.payee === '-') ))
               .map(r => ({ ...r, payment_date: sanitizeDateYearTypo(r.payment_date, r.project_code) }))
               .sort((a, b) => compareDatesDescNullsLast(a.payment_date, b.payment_date, a.id, b.id));
-          }
+            if (expCombined.length > 0) {
+              masterLedgerCache.expenses = expCombined;
+              masterLedgerExactCounts.expenses = expCombined.length;
+            }
 
-          if (labAll && labAll.length > 0) {
-            // 過濾無日期且 0 工數之空白佔位行 (如 ID 3870 COMPANY_OVERHEAD 0工)，並修正 7018/3013/2109/2026-12 手誤年份
-            masterLedgerCache.labor = labAll
-              .filter(r => !(Number(r.work_days || 0) === 0 && !r.work_date))
-              .filter(r => !(r.project_code === 'COMPANY_OVERHEAD' && Number(r.work_days || 0) === 0))
-              .map(r => ({ ...r, work_date: sanitizeDateYearTypo(r.work_date, r.project_code) }))
-              .sort((a, b) => compareDatesDescNullsLast(a.work_date, b.work_date, a.id, b.id));
-          }
+            if (incAll && incAll.length > 0) {
+              masterLedgerCache.incomes = incAll
+                .filter(r => !(r.project_code === 'COMPANY_OVERHEAD' && !r.payment_date && Number(r.amount || 0) > 50000000))
+                .filter(r => !( !r.payment_date && Number(r.amount || 0) === 0 ))
+                .map(r => ({ ...r, payment_date: sanitizeDateYearTypo(r.payment_date, r.project_code) }))
+                .sort((a, b) => compareDatesDescNullsLast(a.payment_date, b.payment_date, a.id, b.id));
+              masterLedgerExactCounts.incomes = masterLedgerCache.incomes.length;
+            }
 
-          masterLedgerLoaded = true;
-          syncAllWorkersFromLaborData();
-          rebuildVendorAutocompleteSets();
-          populateMasterLedgerFilters();
-          updateDynamicHeroCounter();
+            if (labAll && labAll.length > 0) {
+              masterLedgerCache.labor = labAll
+                .filter(r => !(Number(r.work_days || 0) === 0 && !r.work_date))
+                .filter(r => !(r.project_code === 'COMPANY_OVERHEAD' && Number(r.work_days || 0) === 0))
+                .map(r => ({ ...r, work_date: sanitizeDateYearTypo(r.work_date, r.project_code) }))
+                .sort((a, b) => compareDatesDescNullsLast(a.work_date, b.work_date, a.id, b.id));
+              masterLedgerExactCounts.labor = masterLedgerCache.labor.length;
+            }
 
-          if (statusEl) {
-            statusEl.textContent = `🟢 已全量同步雲端 (開支 ${masterLedgerCache.expenses.length.toLocaleString()} 筆 · 收款 ${masterLedgerCache.incomes.length.toLocaleString()} 筆 · 日工 ${masterLedgerCache.labor.length.toLocaleString()} 筆 · 師傅 ${workerRegistryData.length} 位)`;
+            masterLedgerLoaded = true;
+            syncAllWorkersFromLaborData();
+            rebuildVendorAutocompleteSets();
+            populateMasterLedgerFilters();
+            updateDynamicHeroCounter();
+
+            if (statusEl) {
+              statusEl.textContent = `🟢 已全量同步雲端 (開支 ${masterLedgerCache.expenses.length.toLocaleString()} 筆 · 收款 ${masterLedgerCache.incomes.length.toLocaleString()} 筆 · 日工 ${masterLedgerCache.labor.length.toLocaleString()} 筆 · 師傅 ${workerRegistryData.length} 位)`;
+            }
+            if (forceToast) showToast(`✅ 已全量同步：開支 ${masterLedgerCache.expenses.length.toLocaleString()} 筆、收款 ${masterLedgerCache.incomes.length.toLocaleString()} 筆、日工 ${masterLedgerCache.labor.length.toLocaleString()} 筆！`);
+          } catch (err) {
+            if (statusEl) statusEl.textContent = '⚠️ 使用本機快取數據顯示';
           }
-          if (forceToast) showToast(`✅ 已全量同步：開支 ${masterLedgerCache.expenses.length.toLocaleString()} 筆、收款 ${masterLedgerCache.incomes.length.toLocaleString()} 筆、日工 ${masterLedgerCache.labor.length.toLocaleString()} 筆！`);
-        } catch (err) {
-          if (statusEl) statusEl.textContent = '⚠️ 使用本機快取數據顯示';
         }
+        isMasterLedgerLoading = false;
+        renderMasterLedgerTable();
+      })();
+      return masterLedgerLoadPromise;
+    }
+
+    async function goToMasterLedgerPage(targetPage) {
+      if (!masterLedgerLoaded && supabaseClient) {
+        showToast('⏳ 正在載入資料庫完整紀錄，請稍候...');
+        await loadMasterLedgerFromCloud(false);
       }
-      isMasterLedgerLoading = false;
+      const filtered = getFilteredMasterLedgerRows();
+      const totalPages = Math.ceil(filtered.length / masterLedgerPageSize) || 1;
+      masterLedgerPage = Math.max(1, Math.min(totalPages, parseInt(targetPage, 10) || 1));
       renderMasterLedgerTable();
+    }
+
+    async function goToMasterLedgerLastPage() {
+      if (!masterLedgerLoaded && supabaseClient) {
+        showToast('⏳ 正在定位至資料庫最尾頁紀錄...');
+        await loadMasterLedgerFromCloud(false);
+      }
+      const filtered = getFilteredMasterLedgerRows();
+      const totalPages = Math.ceil(filtered.length / masterLedgerPageSize) || 1;
+      masterLedgerPage = totalPages;
+      renderMasterLedgerTable();
+      showToast(`✅ 已跳至資料庫最尾頁（第 ${totalPages} 頁，共 ${filtered.length.toLocaleString()} 筆）`);
     }
 
     function switchMasterLedgerType(type) {
@@ -5198,22 +5304,29 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;`;
       const projNameMap = {};
       (projects || []).forEach(p => { projNameMap[p.code] = p.name; });
 
+      const q = (document.getElementById('ml-search')?.value || '').trim();
+      const projFilter = document.getElementById('ml-project-filter')?.value || 'ALL';
+      const catFilter = document.getElementById('ml-category-filter')?.value || 'ALL';
+      const workerFilter = document.getElementById('ml-worker-filter')?.value || 'ALL';
+      const isUnfiltered = !q && projFilter === 'ALL' && catFilter === 'ALL' && workerFilter === 'ALL';
+
       const filtered = getFilteredMasterLedgerRows();
-      const totalItems = filtered.length;
-      const totalPages = Math.ceil(totalItems / masterLedgerPageSize) || 1;
+      const knownTotalItems = isUnfiltered
+        ? Math.max(filtered.length, masterLedgerExactCounts[currentMasterLedgerType] || 0)
+        : filtered.length;
+      const totalPages = Math.ceil(knownTotalItems / masterLedgerPageSize) || 1;
       if (masterLedgerPage > totalPages) masterLedgerPage = totalPages;
       if (masterLedgerPage < 1) masterLedgerPage = 1;
 
       const start = (masterLedgerPage - 1) * masterLedgerPageSize;
       const pageRows = filtered.slice(start, start + masterLedgerPageSize);
 
-      if (countEl) countEl.textContent = totalItems.toLocaleString();
+      if (countEl) countEl.textContent = knownTotalItems.toLocaleString();
 
       if (currentMasterLedgerType === 'expenses') {
         const totalAmt = filtered.reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
         if (sumLabelEl) sumLabelEl.innerHTML = `篩選開支總額：<strong class="text-rose-600 font-mono text-sm" id="ml-stat-sum">${fmtMoney(totalAmt)}</strong>`;
         thead.innerHTML = `<tr>
-          <th class="py-3 px-3">序號/ID</th>
           <th class="py-3 px-3">付款日期</th>
           <th class="py-3 px-3">工程編號</th>
           <th class="py-3 px-3">項目簡稱</th>
@@ -5227,7 +5340,7 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;`;
         </tr>`;
 
         if (pageRows.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="11" class="py-10 text-center text-slate-400">找不到符合篩選條件的開支數據</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="10" class="py-10 text-center text-slate-400">找不到符合篩選條件的開支數據</td></tr>';
         } else {
           tbody.innerHTML = pageRows.map(r => {
             const pName = projNameMap[r.project_code] || '-';
@@ -5236,7 +5349,6 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;`;
               ? `<button type="button" onclick="openReceiptLightbox('${r.receipt_image_url}', '${escapeHtml(r.project_code)} - ${escapeHtml(r.payee || r.category_name)}')" class="px-2 py-0.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-800 rounded font-bold text-[11px]"><i class="fa-solid fa-image"></i> 查看</button>`
               : `<span class="text-slate-300">-</span>`;
             return `<tr class="hover:bg-slate-50 transition">
-              <td class="py-2.5 px-3 font-mono text-slate-400">${escapeHtml(r.seq_no || r.id || '-')}</td>
               <td class="py-2.5 px-3 font-mono text-slate-600 whitespace-nowrap">${escapeHtml(sanitizeDateYearTypo(r.payment_date, r.project_code) || '-')}</td>
               <td class="py-2.5 px-3 font-mono font-bold text-blue-900 whitespace-nowrap cursor-pointer hover:underline" onclick="viewProjectDetail('${escapeHtml(r.project_code)}')">${escapeHtml(r.project_code || '-')}</td>
               <td class="py-2.5 px-3 font-medium text-slate-800 whitespace-nowrap">${escapeHtml(pName)}</td>
@@ -5254,7 +5366,6 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;`;
         const totalAmt = filtered.reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
         if (sumLabelEl) sumLabelEl.innerHTML = `篩選客人收款總額：<strong class="text-emerald-600 font-mono text-sm" id="ml-stat-sum">${fmtMoney(totalAmt)}</strong>`;
         thead.innerHTML = `<tr>
-          <th class="py-3 px-3">序號/ID</th>
           <th class="py-3 px-3">收款日期</th>
           <th class="py-3 px-3">工程編號</th>
           <th class="py-3 px-3">項目簡稱</th>
@@ -5267,12 +5378,11 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;`;
         </tr>`;
 
         if (pageRows.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="10" class="py-10 text-center text-slate-400">找不到符合篩選條件的客人收款記錄</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="9" class="py-10 text-center text-slate-400">找不到符合篩選條件的客人收款記錄</td></tr>';
         } else {
           tbody.innerHTML = pageRows.map(r => {
             const pName = projNameMap[r.project_code] || '-';
             return `<tr class="hover:bg-emerald-50/30 transition">
-              <td class="py-2.5 px-3 font-mono text-slate-400">${escapeHtml(r.seq_no || r.id || '-')}</td>
               <td class="py-2.5 px-3 font-mono text-slate-600 whitespace-nowrap">${escapeHtml(sanitizeDateYearTypo(r.payment_date, r.project_code) || '-')}</td>
               <td class="py-2.5 px-3 font-mono font-bold text-blue-900 whitespace-nowrap cursor-pointer hover:underline" onclick="viewProjectDetail('${escapeHtml(r.project_code)}')">${escapeHtml(r.project_code || '-')}</td>
               <td class="py-2.5 px-3 font-medium text-slate-800 whitespace-nowrap">${escapeHtml(pName)}</td>
@@ -5289,7 +5399,6 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;`;
         const totalDays = filtered.reduce((acc, r) => acc + (Number(r.work_days) || 0), 0);
         if (sumLabelEl) sumLabelEl.innerHTML = `篩選師傅總工數：<strong class="text-blue-600 font-mono text-sm" id="ml-stat-sum">${totalDays.toLocaleString()} 工</strong>`;
         thead.innerHTML = `<tr>
-          <th class="py-3 px-3">序號/ID</th>
           <th class="py-3 px-3">開工日期</th>
           <th class="py-3 px-3">工程編號</th>
           <th class="py-3 px-3">項目簡稱</th>
@@ -5300,12 +5409,11 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;`;
         </tr>`;
 
         if (pageRows.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" class="py-10 text-center text-slate-400">找不到符合篩選條件的師傅日工記錄</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" class="py-10 text-center text-slate-400">找不到符合篩選條件的師傅日工記錄</td></tr>';
         } else {
           tbody.innerHTML = pageRows.map(r => {
             const pName = projNameMap[r.project_code] || '-';
             return `<tr class="hover:bg-blue-50/30 transition">
-              <td class="py-2.5 px-3 font-mono text-slate-400">${escapeHtml(r.seq_no || r.id || '-')}</td>
               <td class="py-2.5 px-3 font-mono text-slate-600 whitespace-nowrap">${escapeHtml(sanitizeDateYearTypo(r.work_date, r.project_code) || '-')}</td>
               <td class="py-2.5 px-3 font-mono font-bold text-blue-900 whitespace-nowrap cursor-pointer hover:underline" onclick="viewProjectDetail('${escapeHtml(r.project_code)}')">${escapeHtml(r.project_code || '-')}</td>
               <td class="py-2.5 px-3 font-medium text-slate-800 whitespace-nowrap">${escapeHtml(pName)}</td>
@@ -5319,15 +5427,15 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;`;
       }
 
       if (pageInfoEl) {
-        pageInfoEl.textContent = totalItems > 0
-          ? `顯示第 ${start + 1} - ${Math.min(start + masterLedgerPageSize, totalItems)} 筆，共 ${totalItems.toLocaleString()} 筆（第 ${masterLedgerPage} / ${totalPages} 頁）`
+        pageInfoEl.textContent = knownTotalItems > 0
+          ? `顯示第 ${start + 1} - ${Math.min(start + masterLedgerPageSize, knownTotalItems)} 筆，資料庫共 ${knownTotalItems.toLocaleString()} 筆（第 ${masterLedgerPage} / ${totalPages} 頁）`
           : '顯示 0 筆';
       }
 
       if (pageCtrlEl) {
         pageCtrlEl.innerHTML = '';
         if (totalPages > 1) {
-          const makePageBtn = (label, target, disabled = false, active = false) => {
+          const makePageBtn = (label, target, disabled = false, active = false, isLastPageBtn = false) => {
             const b = document.createElement('button');
             b.type = 'button';
             b.textContent = label;
@@ -5337,8 +5445,11 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;`;
             } else if (active) {
               b.className = 'px-2.5 py-1 rounded text-xs font-bold bg-amber-500 text-slate-950 shadow-sm';
             } else {
-              b.className = 'px-2.5 py-1 rounded text-xs bg-white border border-slate-200 text-slate-600 hover:bg-amber-50';
-              b.onclick = () => { masterLedgerPage = target; renderMasterLedgerTable(); };
+              b.className = 'px-2.5 py-1 rounded text-xs bg-white border border-slate-200 text-slate-600 hover:bg-amber-50 cursor-pointer';
+              b.onclick = () => {
+                if (isLastPageBtn) goToMasterLedgerLastPage();
+                else goToMasterLedgerPage(target);
+              };
             }
             return b;
           };
@@ -5348,7 +5459,7 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;`;
             pageCtrlEl.appendChild(makePageBtn(String(i), i, false, i === masterLedgerPage));
           }
           pageCtrlEl.appendChild(makePageBtn('下一頁 ›', masterLedgerPage + 1, masterLedgerPage === totalPages));
-          pageCtrlEl.appendChild(makePageBtn('尾頁 »', totalPages, masterLedgerPage === totalPages));
+          pageCtrlEl.appendChild(makePageBtn('尾頁 »', totalPages, masterLedgerPage === totalPages, false, true));
         }
       }
     }
@@ -6792,16 +6903,20 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;`;
       const w = workerRegistryData.find(x => x.name === cleanName) || { name: cleanName, wage: 1500, phone: '未登記', bank_name: '未登記', bank_acc: '-' };
       document.getElementById('qwi-name').textContent = w.name;
       document.getElementById('qwi-wage').textContent = `日薪人工：HK$ ${Number(w.wage || 1500).toLocaleString()} / 工`;
-      document.getElementById('qwi-bank').textContent = `電話: ${w.phone || '未登記'} | 銀行戶口: ${w.bank_name || ''} ${w.bank_acc || ''}`;
+      document.getElementById('qwi-bank').textContent = `WhatsApp 電話: ${w.phone || '未登記'}`;
       const hist = getWorkerProjectHistory(cleanName);
       const listEl = document.getElementById('qwi-projects-list');
       if (listEl) {
         if (hist.length === 0) {
           listEl.innerHTML = '<span class="text-slate-400">暫無過往工程記錄（本次提交後將自動建立履歷）</span>';
         } else {
-          listEl.innerHTML = hist.map(h =>
-            `<span onclick="viewProjectDetail('${escapeHtml(h.code)}')" class="cursor-pointer px-2.5 py-1 rounded-lg bg-white border border-blue-200 text-blue-950 font-semibold hover:bg-blue-50 transition">🏗️ ${escapeHtml(h.code)} ${escapeHtml(h.name)} · <strong class="text-emerald-700">${h.days} 工</strong></span>`
-          ).join('');
+          const totalWorkDays = Math.round(hist.reduce((acc, h) => acc + (Number(h.days) || 0), 0) * 10) / 10;
+          listEl.innerHTML = `<div class="w-full mb-1.5"><span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-950 font-extrabold text-[11px]">🏗️ 累計參與 ${hist.length} 個工程 · 合共 ${totalWorkDays} 工</span></div>` +
+            `<div class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto custom-scrollbar pr-1 w-full">` +
+            hist.map(h =>
+              `<span onclick="viewProjectDetail('${escapeHtml(h.code)}')" class="cursor-pointer px-2.5 py-1 rounded-lg bg-white border border-blue-200 text-blue-950 font-semibold hover:bg-blue-50 transition">🏗️ ${escapeHtml(h.code)} ${escapeHtml(h.name)} · <strong class="text-emerald-700">${Math.round(h.days * 10) / 10} 工</strong></span>`
+            ).join('') +
+            `</div>`;
         }
       }
       card.classList.remove('hidden');
@@ -6812,17 +6927,19 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;`;
       const vReg = document.getElementById('wtab-view-registry');
       const bPay = document.getElementById('wtab-btn-payroll');
       const bReg = document.getElementById('wtab-btn-registry');
+      const activeCls = 'inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-950 text-amber-400 font-extrabold text-xs shadow-sm transition whitespace-nowrap cursor-pointer';
+      const inactiveCls = 'inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-transparent text-slate-600 hover:text-slate-900 hover:bg-white/70 font-bold text-xs transition whitespace-nowrap cursor-pointer';
       if (tab === 'payroll') {
         if (vPay) vPay.classList.remove('hidden');
         if (vReg) vReg.classList.add('hidden');
-        if (bPay) bPay.className = 'px-3 py-1.5 rounded-lg bg-blue-950 text-amber-400 font-extrabold text-xs transition';
-        if (bReg) bReg.className = 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 font-bold text-xs transition';
+        if (bPay) bPay.className = activeCls;
+        if (bReg) bReg.className = inactiveCls;
         renderSemiMonthlyPayroll();
       } else {
         if (vPay) vPay.classList.add('hidden');
         if (vReg) vReg.classList.remove('hidden');
-        if (bReg) bReg.className = 'px-3 py-1.5 rounded-lg bg-blue-950 text-amber-400 font-extrabold text-xs transition';
-        if (bPay) bPay.className = 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 font-bold text-xs transition';
+        if (bReg) bReg.className = activeCls;
+        if (bPay) bPay.className = inactiveCls;
         renderWorkerRegistryTable();
       }
     }
@@ -6879,24 +6996,58 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;`;
       });
     }
 
+    let expandedWorkerHistorySet = new Set();
+    function toggleWorkerHistoryExpand(workerId) {
+      if (expandedWorkerHistorySet.has(workerId)) expandedWorkerHistorySet.delete(workerId);
+      else expandedWorkerHistorySet.add(workerId);
+      renderWorkerRegistryTable();
+    }
+
     function renderWorkerRegistryTable() {
       const tbody = document.getElementById('worker-registry-tbody');
       if (!tbody) return;
-      tbody.innerHTML = workerRegistryData.map(w => {
-        const hist = getWorkerProjectHistory(w.name);
-        const histHtml = hist.length > 0
-          ? hist.map(h => `<span onclick="viewProjectDetail('${escapeHtml(h.code)}')" class="cursor-pointer inline-block px-2 py-0.5 mr-1 mb-1 rounded bg-blue-50 text-blue-900 font-semibold text-[11px] hover:bg-blue-100">${escapeHtml(h.code)} ${escapeHtml(h.name)} (${h.days}工)</span>`).join('')
-          : '<span class="text-slate-400">暫無開工紀錄</span>';
+      tbody.innerHTML = workerRegistryData.map((w, idx) => {
+        const wKey = String(w.id || ('w_' + idx));
+        const hist = getWorkerProjectHistory(w.name).sort((a, b) => (Number(b.days) || 0) - (Number(a.days) || 0));
+        const totalProjects = hist.length;
+        const totalDays = Math.round(hist.reduce((acc, h) => acc + (Number(h.days) || 0), 0) * 10) / 10;
+        const isExpanded = expandedWorkerHistorySet.has(wKey);
+        const PREVIEW_LIMIT = 4;
+
+        let histHtml = '<span class="text-slate-400">暫無開工紀錄</span>';
+        if (totalProjects > 0) {
+          const visibleList = isExpanded ? hist : hist.slice(0, PREVIEW_LIMIT);
+          const remainingCount = totalProjects - PREVIEW_LIMIT;
+          const summaryBadge = `<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-900 text-amber-300 font-extrabold text-[11px] whitespace-nowrap">🏗️ 共 ${totalProjects} 個工程 · 累計 ${totalDays} 工</span>`;
+          const toggleBtn = totalProjects > PREVIEW_LIMIT
+            ? `<button type="button" onclick="toggleWorkerHistoryExpand('${escapeHtml(wKey)}')" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 font-extrabold text-[11px] transition cursor-pointer whitespace-nowrap">${isExpanded ? '▲ 收起清單' : `▼ 展開全部 ${totalProjects} 個工程 (+${remainingCount})`}</button>`
+            : '';
+          const pillsHtml = visibleList.map(h =>
+            `<span onclick="viewProjectDetail('${escapeHtml(h.code)}')" class="cursor-pointer inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200/80 text-blue-900 font-semibold text-[11px] hover:bg-blue-100 whitespace-nowrap">${escapeHtml(h.code)} ${escapeHtml(h.name)} <strong class="text-emerald-700">(${Math.round(h.days * 10) / 10}工)</strong></span>`
+          ).join('');
+
+          histHtml = `
+            <div class="space-y-1.5">
+              <div class="flex flex-wrap items-center gap-1.5">
+                ${summaryBadge}
+                ${toggleBtn}
+              </div>
+              <div class="flex flex-wrap gap-1 ${isExpanded ? 'max-h-36 overflow-y-auto custom-scrollbar p-1.5 bg-slate-50 rounded-xl border border-slate-200' : ''}">
+                ${pillsHtml}
+              </div>
+            </div>
+          `;
+        }
+
         return `
-          <tr class="hover:bg-slate-50">
-            <td class="py-2.5 px-3 font-bold text-slate-900 whitespace-nowrap">${escapeHtml(w.name)}</td>
-            <td class="py-2.5 px-3 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">HK$ ${Number(w.wage || 0).toLocaleString()} / 工</td>
-            <td class="py-2.5 px-3 font-mono text-slate-600 whitespace-nowrap">${escapeHtml(w.phone || '-')}</td>
-            <td class="py-2.5 px-3 font-mono text-slate-700 whitespace-nowrap">${escapeHtml(w.bank_name || '')} ${escapeHtml(w.bank_acc || '-')}</td>
-            <td class="py-2.5 px-3">${histHtml}</td>
-            <td class="py-2.5 px-3 text-center whitespace-nowrap">
-              <button type="button" onclick="editWorkerProfile('${w.id}')" class="text-xs bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg font-bold mr-1">編輯</button>
-              <button type="button" onclick="deleteWorkerProfile('${w.id}')" class="text-xs text-red-500 hover:bg-red-50 px-2 py-1 rounded-lg font-bold">刪除</button>
+          <tr class="hover:bg-slate-50 align-top">
+            <td class="py-3 px-3 font-bold text-slate-900 whitespace-nowrap">${escapeHtml(w.name)}</td>
+            <td class="py-3 px-3 text-right font-mono font-bold text-emerald-700 whitespace-nowrap">HK$ ${Number(w.wage || 0).toLocaleString()} / 工</td>
+            <td class="py-3 px-3 font-mono text-slate-600 whitespace-nowrap">${escapeHtml(w.phone || '-')}</td>
+            <td class="py-3 px-3 min-w-[260px] max-w-xl">${histHtml}</td>
+            <td class="py-3 px-3 text-center whitespace-nowrap">
+              <button type="button" onclick="editWorkerProfile('${w.id}')" class="text-xs bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg font-bold mr-1 cursor-pointer">編輯</button>
+              <button type="button" onclick="deleteWorkerProfile('${w.id}')" class="text-xs text-red-500 hover:bg-red-50 px-2 py-1 rounded-lg font-bold cursor-pointer">刪除</button>
             </td>
           </tr>
         `;
@@ -7370,14 +7521,13 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;`;
       }).slice(0, 500);
 
       if (currentAdminEditType === 'expenses') {
-        thead.innerHTML = '<tr><th class="py-2.5 px-3">ID</th><th class="py-2.5 px-3">日期</th><th class="py-2.5 px-3">工程編號</th><th class="py-2.5 px-3">類別</th><th class="py-2.5 px-3">收款人/供應商</th><th class="py-2.5 px-3 text-right">金額 (HK$)</th><th class="py-2.5 px-3">備註</th><th class="py-2.5 px-3 text-center">操作</th></tr>';
+        thead.innerHTML = '<tr><th class="py-2.5 px-3">日期</th><th class="py-2.5 px-3">工程編號</th><th class="py-2.5 px-3">類別</th><th class="py-2.5 px-3">收款人/供應商</th><th class="py-2.5 px-3 text-right">金額 (HK$)</th><th class="py-2.5 px-3">備註</th><th class="py-2.5 px-3 text-center">操作</th></tr>';
         if (filtered.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-slate-400">找不到符合條件的開支紀錄</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-slate-400">找不到符合條件的開支紀錄</td></tr>';
           return;
         }
         tbody.innerHTML = filtered.map(r => `
           <tr class="hover:bg-amber-50/50 transition">
-            <td class="py-2 px-3 font-mono text-slate-400">#${escapeHtml(r.id)}</td>
             <td class="py-2 px-3 font-mono text-slate-600 whitespace-nowrap">${escapeHtml(sanitizeDateYearTypo(r.payment_date || r.date, r.project_code) || '-')}</td>
             <td class="py-2 px-3 font-mono font-bold text-blue-900 whitespace-nowrap">${escapeHtml(r.project_code || '-')}</td>
             <td class="py-2 px-3 whitespace-nowrap"><span class="px-2 py-0.5 rounded bg-amber-50 text-amber-800 font-semibold">${escapeHtml(r.category_name || r.category || '-')}</span></td>
@@ -7391,14 +7541,13 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;`;
           </tr>
         `).join('');
       } else if (currentAdminEditType === 'incomes') {
-        thead.innerHTML = '<tr><th class="py-2.5 px-3">ID</th><th class="py-2.5 px-3">收款日期</th><th class="py-2.5 px-3">工程編號</th><th class="py-2.5 px-3">付款人/客戶</th><th class="py-2.5 px-3">方式/單號</th><th class="py-2.5 px-3 text-right">收款金額 (HK$)</th><th class="py-2.5 px-3">備註</th><th class="py-2.5 px-3 text-center">操作</th></tr>';
+        thead.innerHTML = '<tr><th class="py-2.5 px-3">收款日期</th><th class="py-2.5 px-3">工程編號</th><th class="py-2.5 px-3">付款人/客戶</th><th class="py-2.5 px-3">方式/單號</th><th class="py-2.5 px-3 text-right">收款金額 (HK$)</th><th class="py-2.5 px-3">備註</th><th class="py-2.5 px-3 text-center">操作</th></tr>';
         if (filtered.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-slate-400">找不到符合條件的收款紀錄</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-slate-400">找不到符合條件的收款紀錄</td></tr>';
           return;
         }
         tbody.innerHTML = filtered.map(r => `
           <tr class="hover:bg-emerald-50/50 transition">
-            <td class="py-2 px-3 font-mono text-slate-400">#${escapeHtml(r.id)}</td>
             <td class="py-2 px-3 font-mono text-slate-600 whitespace-nowrap">${escapeHtml(sanitizeDateYearTypo(r.payment_date || r.date, r.project_code) || '-')}</td>
             <td class="py-2 px-3 font-mono font-bold text-blue-900 whitespace-nowrap">${escapeHtml(r.project_code || '-')}</td>
             <td class="py-2 px-3 font-semibold text-slate-800">${escapeHtml(r.payer || '-')}</td>
@@ -7412,14 +7561,13 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;`;
           </tr>
         `).join('');
       } else {
-        thead.innerHTML = '<tr><th class="py-2.5 px-3">ID</th><th class="py-2.5 px-3">開工日期</th><th class="py-2.5 px-3">工程編號</th><th class="py-2.5 px-3">師傅姓名</th><th class="py-2.5 px-3">施工地點</th><th class="py-2.5 px-3 text-right">工數 (日)</th><th class="py-2.5 px-3">備註</th><th class="py-2.5 px-3 text-center">操作</th></tr>';
+        thead.innerHTML = '<tr><th class="py-2.5 px-3">開工日期</th><th class="py-2.5 px-3">工程編號</th><th class="py-2.5 px-3">師傅姓名</th><th class="py-2.5 px-3">施工地點</th><th class="py-2.5 px-3 text-right">工數 (日)</th><th class="py-2.5 px-3">備註</th><th class="py-2.5 px-3 text-center">操作</th></tr>';
         if (filtered.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="8" class="py-8 text-center text-slate-400">找不到符合條件的師傅日工紀錄</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="7" class="py-8 text-center text-slate-400">找不到符合條件的師傅日工紀錄</td></tr>';
           return;
         }
         tbody.innerHTML = filtered.map(r => `
           <tr class="hover:bg-blue-50/50 transition">
-            <td class="py-2 px-3 font-mono text-slate-400">#${escapeHtml(r.id)}</td>
             <td class="py-2 px-3 font-mono text-slate-600 whitespace-nowrap">${escapeHtml(sanitizeDateYearTypo(r.work_date, r.project_code) || '-')}</td>
             <td class="py-2 px-3 font-mono font-bold text-blue-900 whitespace-nowrap">${escapeHtml(r.project_code || '-')}</td>
             <td class="py-2 px-3 font-bold text-slate-900">${escapeHtml(r.worker_name || '-')}</td>
@@ -7445,8 +7593,8 @@ ALTER TABLE public.clients ENABLE ROW LEVEL SECURITY;`;
 
       document.getElementById('adm-edit-id').value = rec.id;
       document.getElementById('adm-edit-table').value = type;
-      document.getElementById('adm-edit-record-badge').textContent = `正在修改 ${type.toUpperCase()} ID #${rec.id}`;
-      document.getElementById('adm-edit-form-title').textContent = `✏️ 正在編輯紀錄 #${rec.id}（修改後撳右下角儲存即同步更新資料庫）`;
+      document.getElementById('adm-edit-record-badge').textContent = `已載入 ${rec.project_code || ''} 紀錄`;
+      document.getElementById('adm-edit-form-title').textContent = `✏️ 正在編輯 [${rec.project_code || ''}] 紀錄（修改後撳右下角儲存即同步更新資料庫）`;
 
       const rawDate = sanitizeDateYearTypo(rec.payment_date || rec.work_date || rec.date || '');
       document.getElementById('adm-edit-date').value = /^\d{4}-\d{2}-\d{2}/.test(rawDate) ? rawDate.slice(0, 10) : '';
