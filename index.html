@@ -4679,14 +4679,37 @@ END $$;</code></pre>
     function getDeletedBlacklist() {
       return getDeletedIdsBlacklist();
     }
+    async function persistDeletedBlacklistToCloud(list) {
+      if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
+      try {
+        const trimmed = (list || []).slice(-500);
+        const payloadStr = '__DELETED_IDS__:' + JSON.stringify(trimmed);
+        const { data: existing } = await supabaseClient.from('catalog_items').select('id').like('description', '__DELETED_IDS__:%').limit(1);
+        if (existing && existing[0] && existing[0].id) {
+          await supabaseClient.from('catalog_items').update({ description: payloadStr }).eq('id', existing[0].id);
+        } else {
+          await supabaseClient.from('catalog_items').insert([{ description: payloadStr, default_amount: 0 }]);
+        }
+      } catch (e) {}
+    }
     function addIdToDeletedBlacklist(id) {
       try {
         const list = getDeletedIdsBlacklist();
         const strId = String(id);
         if (!list.includes(strId)) {
           list.push(strId);
-          localStorage.setItem('INV_DELETED_BLACKLIST', JSON.stringify(list.slice(-300)));
+          const trimmed = list.slice(-500);
+          localStorage.setItem('INV_DELETED_BLACKLIST', JSON.stringify(trimmed));
+          persistDeletedBlacklistToCloud(trimmed);
         }
+      } catch (e) {}
+    }
+    function removeIdFromDeletedBlacklist(id) {
+      try {
+        const strId = String(id);
+        const list = getDeletedIdsBlacklist().filter(x => x !== strId);
+        localStorage.setItem('INV_DELETED_BLACKLIST', JSON.stringify(list));
+        persistDeletedBlacklistToCloud(list);
       } catch (e) {}
     }
 
@@ -5785,6 +5808,23 @@ END $$;`;
           }
         }
         localStorage.setItem('RENOBOOK_OFFLINE_QUEUE', JSON.stringify(remaining));
+        // 同步補傳斷網期間開立嘅本機暫存發票 (inv_...)
+        try {
+          const savedInvs = JSON.parse(localStorage.getItem('LOCAL_INVOICES') || '[]');
+          const localOnlyInvs = savedInvs.filter(i => i && String(i.id).startsWith('inv_'));
+          for (const locInv of localOnlyInvs) {
+            const { id, ...invPayload } = locInv;
+            const { data: insInv, error: invErr } = await supabaseClient.from('invoices').insert([invPayload]).select().single();
+            if (!invErr && insInv) {
+              syncedCount++;
+              const idx = savedInvs.findIndex(x => String(x.id) === String(id));
+              if (idx > -1) savedInvs[idx] = insInv;
+            }
+          }
+          if (localOnlyInvs.length > 0) {
+            localStorage.setItem('LOCAL_INVOICES', JSON.stringify(savedInvs));
+          }
+        } catch (ie) {}
         updateNetworkBadgeState(navigator.onLine !== false, remaining.length);
         if (syncedCount > 0) {
           showToast(`🎉 網絡已恢復，已自動將 ${syncedCount} 筆離線暫存紀錄補傳至雲端資料庫！`);
@@ -5799,6 +5839,19 @@ END $$;`;
       const q = getOfflineSyncQueue();
       updateNetworkBadgeState(false, q.length);
       showToast('🟠 偵測到網絡中斷：你輸入嘅單據或帳目會自動安全暫存於本機，恢復網絡後自動補傳雲端！');
+    });
+
+    // 跨分頁 (Multi-Tab) 零延遲同步監聽
+    window.addEventListener('storage', (e) => {
+      if (!e || !e.key || !isPinUnlocked()) return;
+      if (['RENOBOOK_WORKERS', 'RENOBOOK_CUSTOM_CAT_MAP', 'RENOBOOK_CUSTOM_GROUPS', 'RENOBOOK_QUOTE_ONLY_PROJECTS', 'RENOBOOK_SUBCON_CONTRACTS', 'RENOBOOK_PAYROLL_POSTED', 'RENOBOOK_VO_MAP', 'LOCAL_INVOICES'].includes(e.key)) {
+        loadCustomCategoriesFromStorage();
+        loadSubconContractsFromStorage();
+        renderDashboardKPIs();
+        renderProjectTable();
+        renderProjectDetail();
+        renderSemiMonthlyPayroll();
+      }
     });
 
     window.addEventListener('online', async () => {
@@ -6587,12 +6640,14 @@ END $$;`;
       initSupabase(url, key); closeDbModal(); await loadAllData(false); showToast('✅ 已重新連接 Supabase 並啟動即時同步！');
     }
 
+    let _loadAllDataSeq = 0;
     async function loadAllData(isSilentBackground = false) {
+      const myLoadSeq = ++_loadAllDataSeq;
       if (navigator.onLine !== false && getOfflineSyncQueue().length > 0) {
         await flushOfflineQueueToCloud();
       }
       await healNov2026DateTypoRecords();
-      const blacklist = getDeletedIdsBlacklist();
+      let blacklist = getDeletedIdsBlacklist();
       let cloudConnected = false;
 
       if (supabaseClient) {
@@ -6626,12 +6681,29 @@ END $$;`;
             }).catch(() => {});
           }
 
+          if (myLoadSeq !== _loadAllDataSeq) return;
+          if (!itemRes.error && Array.isArray(itemRes.data)) {
+            const delRow = itemRes.data.find(i => String(i.description || '').startsWith('__DELETED_IDS__:'));
+            if (delRow && delRow.description) {
+              try {
+                const cloudDel = JSON.parse(delRow.description.slice('__DELETED_IDS__:'.length));
+                if (Array.isArray(cloudDel)) {
+                  const mergedDel = Array.from(new Set([...blacklist, ...cloudDel.map(String)])).slice(-500);
+                  if (mergedDel.length !== blacklist.length) {
+                    blacklist = mergedDel;
+                    localStorage.setItem('INV_DELETED_BLACKLIST', JSON.stringify(blacklist));
+                  }
+                }
+              } catch (de) {}
+            }
+          }
           if (!catRes.error && catRes.data && catRes.data.length > 0) {
             categoriesDict = catRes.data;
             let catMapUpdated = false;
             catRes.data.forEach(c => {
               if (!c || !c.category_name) return;
               const cName = (c.category_name === '公司-車輛費用(油費/泊車/牌費)') ? '公司-車輛費用' : String(c.category_name).trim();
+              if (blacklist.includes('cat_name_' + cName)) return;
               CATEGORY_ID_BY_NAME[cName] = c.id;
               const grp = c.category_group === 'uncategorized' ? 'company' : (c.category_group || 'subcon');
               if (CATEGORY_MAP[grp] && !CATEGORY_MAP[grp].includes(cName)) {
@@ -6697,10 +6769,17 @@ END $$;`;
                   remark: e.remarks || ''
                 };
               });
+            const isExpDeleted = (id) => blacklist.includes(String(id)) || blacklist.includes('expenses:' + String(id));
+            window.sessionEnteredExpenses = (window.sessionEnteredExpenses || []).filter(r => r && r.id != null && !isExpDeleted(r.id));
             const expMergeMap = new Map();
-            (window.sessionEnteredExpenses || []).forEach(r => { if (r && r.id != null && !blacklist.includes(String(r.id))) expMergeMap.set(String(r.id), r); });
+            (window.sessionEnteredExpenses || []).forEach(r => {
+              // 僅保留剛喺離線佇列尚未上傳、或真正仍存在於雲端嘅 session 紀錄
+              if (String(r.id).length >= 13 || freshExpRows.some(f => String(f.id) === String(r.id))) {
+                expMergeMap.set(String(r.id), r);
+              }
+            });
             freshExpRows.forEach(r => {
-              if (r && r.id != null && !blacklist.includes(String(r.id))) {
+              if (r && r.id != null && !isExpDeleted(r.id)) {
                 const prev = expMergeMap.get(String(r.id));
                 expMergeMap.set(String(r.id), prev && prev._sessionEnteredTs ? { ...r, _sessionEnteredTs: prev._sessionEnteredTs } : r);
               }
@@ -6708,9 +6787,9 @@ END $$;`;
             recentExpenses = Array.from(expMergeMap.values()).sort((a, b) => compareDatesDescNullsLast(a.date, b.date, a.id, b.id));
             if (Array.isArray(masterLedgerCache.expenses) && masterLedgerCache.expenses.length > 0) {
               const byId = new Map();
-              freshExpRows.forEach(r => byId.set(String(r.id), r));
+              freshExpRows.forEach(r => { if (!isExpDeleted(r.id)) byId.set(String(r.id), r); });
               masterLedgerCache.expenses.forEach(r => {
-                if (!byId.has(String(r.id))) byId.set(String(r.id), r);
+                if (!isExpDeleted(r.id) && !byId.has(String(r.id))) byId.set(String(r.id), r);
               });
               masterLedgerCache.expenses = Array.from(byId.values()).sort((a, b) => compareDatesDescNullsLast(a.payment_date || a.date, b.payment_date || b.date, a.id, b.id));
             }
@@ -6764,10 +6843,16 @@ END $$;`;
                   remark: i.remarks || ''
                 };
               });
+            const isIncDeleted = (id) => blacklist.includes(String(id)) || blacklist.includes('incomes:' + String(id));
+            window.sessionEnteredIncomes = (window.sessionEnteredIncomes || []).filter(r => r && r.id != null && !isIncDeleted(r.id));
             const incMergeMap = new Map();
-            (window.sessionEnteredIncomes || []).forEach(r => { if (r && r.id != null && !blacklist.includes(String(r.id))) incMergeMap.set(String(r.id), r); });
+            (window.sessionEnteredIncomes || []).forEach(r => {
+              if (String(r.id).length >= 13 || freshIncRows.some(f => String(f.id) === String(r.id))) {
+                incMergeMap.set(String(r.id), r);
+              }
+            });
             freshIncRows.forEach(r => {
-              if (r && r.id != null && !blacklist.includes(String(r.id))) {
+              if (r && r.id != null && !isIncDeleted(r.id)) {
                 const prev = incMergeMap.get(String(r.id));
                 incMergeMap.set(String(r.id), prev && prev._sessionEnteredTs ? { ...r, _sessionEnteredTs: prev._sessionEnteredTs } : r);
               }
@@ -6775,30 +6860,38 @@ END $$;`;
             recentIncomes = Array.from(incMergeMap.values()).sort((a, b) => compareDatesDescNullsLast(a.date, b.date, a.id, b.id));
             if (Array.isArray(masterLedgerCache.incomes) && masterLedgerCache.incomes.length > 0) {
               const byId = new Map();
-              freshIncRows.forEach(r => byId.set(String(r.id), r));
+              freshIncRows.forEach(r => { if (!isIncDeleted(r.id)) byId.set(String(r.id), r); });
               masterLedgerCache.incomes.forEach(r => {
-                if (!byId.has(String(r.id))) byId.set(String(r.id), r);
+                if (!isIncDeleted(r.id) && !byId.has(String(r.id))) byId.set(String(r.id), r);
               });
               masterLedgerCache.incomes = Array.from(byId.values()).sort((a, b) => compareDatesDescNullsLast(a.payment_date || a.date, b.payment_date || b.date, a.id, b.id));
             }
           }
           if (!labRes.error && labRes.data && labRes.data.length > 0) {
+            const isLabDeleted = (id) => blacklist.includes(String(id)) || blacklist.includes('labor_days:' + String(id));
             const freshLabRows = labRes.data
-              .filter(l => Number(l.work_days || 0) > 0 && l.work_date)
+              .filter(l => Number(l.work_days || 0) > 0 && l.work_date && !isLabDeleted(l.id))
               .map(l => ({
                 ...l,
                 work_date: sanitizeDateYearTypo(l.work_date || '', l.project_code, l)
               }));
-            if (Array.isArray(masterLedgerCache.labor) && masterLedgerCache.labor.length > 0) {
+            if (masterLedgerLoaded && Array.isArray(masterLedgerCache.labor) && masterLedgerCache.labor.length > 0) {
               const byId = new Map();
               freshLabRows.forEach(r => byId.set(String(r.id), r));
               masterLedgerCache.labor.forEach(r => {
-                if (!byId.has(String(r.id))) byId.set(String(r.id), r);
+                if (!isLabDeleted(r.id) && !byId.has(String(r.id))) byId.set(String(r.id), r);
               });
               masterLedgerCache.labor = Array.from(byId.values()).sort((a, b) => compareDatesDescNullsLast(a.work_date, b.work_date, a.id, b.id));
             } else {
               masterLedgerCache.labor = freshLabRows.sort((a, b) => compareDatesDescNullsLast(a.work_date, b.work_date, a.id, b.id));
             }
+            try {
+              const localLogs = JSON.parse(localStorage.getItem('RENOBOOK_LOCAL_LABOR_LOGS') || '[]');
+              const cleanedLocal = localLogs.filter(x => x && !isLabDeleted(x.id));
+              if (cleanedLocal.length !== localLogs.length) {
+                localStorage.setItem('RENOBOOK_LOCAL_LABOR_LOGS', JSON.stringify(cleanedLocal));
+              }
+            } catch (le) {}
           }
 
           if (!invRes.error) {
@@ -6971,6 +7064,7 @@ END $$;`;
               !String(i.description || '').startsWith('__APP_PIN_DIGEST__:') &&
               !String(i.description || '').startsWith('__VO_ITEMS_MAP__:') &&
               !String(i.description || '').startsWith('__CUSTOM_CAT_GROUPS__:') &&
+              !String(i.description || '').startsWith('__DELETED_IDS__:') &&
               !String(i.description || '').startsWith('__QUOTE_ONLY_PROJECTS__:')
             );
             try { localStorage.setItem('LOCAL_ITEMS', JSON.stringify(catalogItemsData)); } catch (e) {}
@@ -7774,6 +7868,7 @@ END $$;`;
       if (btnEl) {
         setCloudButtonStatus(btnEl, 'updating', '⏳ 刪除中...');
       }
+      addIdToDeletedBlacklist(tableName + ':' + strId);
       if (oldRow) {
         recordAuditUndoSnapshot('DELETE', tableName, strId, oldRow, null);
       }
@@ -12324,13 +12419,17 @@ END $$;`;
       showToast(`✅ 已新增標準支出細項「${subName}」！`);
     }
 
-    function removeCustomSubcategory(groupKey, subName) {
+    async function removeCustomSubcategory(groupKey, subName) {
       if (!CATEGORY_MAP[groupKey]) return;
       CATEGORY_MAP[groupKey] = CATEGORY_MAP[groupKey].filter(x => x !== subName);
+      addIdToDeletedBlacklist('cat_name_' + String(subName).trim());
       try { localStorage.setItem('RENOBOOK_CUSTOM_CAT_MAP', JSON.stringify(CATEGORY_MAP)); } catch (e) {}
+      if (supabaseClient && subName) {
+        try { await supabaseClient.from('categories').delete().eq('category_name', subName); } catch (e) {}
+      }
       syncCategoryGroupSelectors();
       renderAdminCategoriesOverview();
-      showToast(`🗑️ 已移除細項「${subName}」`);
+      showToast(`🗑️ 已從本機及雲端移除細項「${subName}」`);
     }
 
     function renderAdminCategoriesOverview() {
@@ -13050,15 +13149,18 @@ END $$;`;
     }
 
     function getAllLaborLogsCombined() {
+      const blacklist = getDeletedIdsBlacklist();
+      const isLabDeleted = (id) => id != null && (blacklist.includes(String(id)) || blacklist.includes('labor_days:' + String(id)));
       const cloudLogs = (masterLedgerCache.labor && masterLedgerCache.labor.length > 0) ? masterLedgerCache.labor : [];
       let localLogs = [];
       try { localLogs = JSON.parse(localStorage.getItem('RENOBOOK_LOCAL_LABOR_LOGS') || '[]'); } catch (e) {}
-      const rawCombined = [...localLogs, ...cloudLogs];
+      // 以雲端最新數據 (cloudLogs) 優先，僅保留尚未同步或離線暫存嘅 localLogs，避免舊本機快取覆蓋雲端已修改/已刪除嘅工數
+      const rawCombined = [...cloudLogs, ...localLogs];
       const sourceList = rawCombined.length > 0 ? rawCombined : DEFAULT_LABOR_LOGS_SEED;
       const seenIds = new Set();
       const deduped = [];
       sourceList.forEach(item => {
-        if (!item) return;
+        if (!item || isLabDeleted(item.id)) return;
         const idKey = item.id != null ? String(item.id) : `${item.worker_name}_${item.work_date}_${item.project_code}_${item.work_days}`;
         if (!seenIds.has(idKey)) {
           seenIds.add(idKey);
@@ -13327,14 +13429,20 @@ END $$;`;
       showToast(`✏️ 正在編輯師傅「${w.name}」，可直接修改日薪後按「儲存師傅」`);
     }
 
-    function deleteWorkerProfile(idOrName) {
+    async function deleteWorkerProfile(idOrName) {
       const targetStr = String(idOrName || '').trim();
+      const targetObj = workerRegistryData.find(x => String(x.id) === targetStr || (x.name || '').trim() === targetStr);
+      const wName = targetObj ? (targetObj.name || '').trim() : targetStr;
+      if (wName) addIdToDeletedBlacklist('worker_name_' + wName);
       workerRegistryData = workerRegistryData.filter(x => String(x.id) !== targetStr && (x.name || '').trim() !== targetStr);
       try { localStorage.setItem('RENOBOOK_WORKERS', JSON.stringify(workerRegistryData)); } catch (err) {}
+      if (supabaseClient && wName) {
+        try { await supabaseClient.from('workers').delete().eq('name', wName); } catch (e) {}
+      }
       populateWorkerSelectors();
       renderWorkerRegistryTable();
       renderSemiMonthlyPayroll();
-      showToast('🗑️ 已移除該師傅登記資料');
+      showToast('🗑️ 已從本機及雲端移除該師傅登記資料');
     }
 
     function resetWorkerRegForm() {
@@ -15136,6 +15244,7 @@ END $$;`;
         }
         pendingDeleteKey = null;
       }
+      addIdToDeletedBlacklist(tbl + ':' + String(idVal));
       if (oldRec) {
         recordAuditUndoSnapshot('DELETE', tbl, idVal, oldRec, null);
       }
@@ -15386,12 +15495,14 @@ END $$;`;
 
       // Clean transient UI fields before upserting back to Supabase
       const cleanPayload = {};
+      removeIdFromDeletedBlacklist(oldRow.id);
+      removeIdFromDeletedBlacklist(tbl + ':' + String(oldRow.id));
       if (tbl === 'expenses') {
-        ['id', 'excel_row', 'seq_no', 'account_code', 'payment_date', 'payment_method', 'cheque_no', 'invoice_no', 'receipt_no', 'payee', 'amount', 'project_code', 'category_id', 'category_name', 'category_group', 'remarks', 'receipt_image_url'].forEach(k => {
+        ['id', 'excel_row', 'seq_no', 'account_code', 'payment_date', 'payment_method', 'cheque_no', 'invoice_no', 'payee', 'amount', 'project_code', 'category_id', 'category_name', 'category_group', 'remarks', 'receipt_image_url'].forEach(k => {
           if (oldRow[k] !== undefined) cleanPayload[k] = oldRow[k];
         });
       } else if (tbl === 'incomes') {
-        ['id', 'excel_row', 'seq_no', 'account_code', 'payment_date', 'payment_method', 'cheque_no', 'invoice_no', 'receipt_no', 'payer', 'amount', 'project_code', 'remarks'].forEach(k => {
+        ['id', 'excel_row', 'seq_no', 'account_code', 'payment_date', 'payment_method', 'cheque_no', 'invoice_no', 'payer', 'amount', 'project_code', 'remarks'].forEach(k => {
           if (oldRow[k] !== undefined) cleanPayload[k] = oldRow[k];
         });
       } else if (tbl === 'labor_days') {
