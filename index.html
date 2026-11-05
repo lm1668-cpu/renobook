@@ -5791,9 +5791,17 @@ END $$;`;
       try {
         for (const item of q) {
           try {
-            let { error } = await supabaseClient.from(item.tableName).insert([item.payload]);
-            if (error && item.payload && item.payload.receipt_image_url) {
-              const fb = { ...item.payload };
+            const cleanPayload = { ...(item.payload || {}) };
+            if ((item.tableName === 'expenses' || item.tableName === 'incomes') && 'receipt_no' in cleanPayload) {
+              if (!cleanPayload.invoice_no) cleanPayload.invoice_no = cleanPayload.receipt_no;
+              delete cleanPayload.receipt_no;
+            }
+            if (!cleanPayload.receipt_image_url) {
+              delete cleanPayload.receipt_image_url;
+            }
+            let { error } = await supabaseClient.from(item.tableName).insert([cleanPayload]);
+            if (error && 'receipt_image_url' in cleanPayload) {
+              const fb = { ...cleanPayload };
               delete fb.receipt_image_url;
               const retry = await supabaseClient.from(item.tableName).insert([fb]);
               error = retry.error;
@@ -6982,22 +6990,65 @@ END $$;`;
               try {
                 const cloudPhases = JSON.parse(phaseCfgRow.description.slice('__PAYMENT_PHASES__:'.length));
                 if (Array.isArray(cloudPhases) && cloudPhases.length > 0) {
-                  customPaymentPhases = cloudPhases;
+                  const phaseMap = new Map();
+                  cloudPhases.forEach(p => {
+                    if (p && p.value && !blacklist.includes('phase_' + String(p.value).trim())) {
+                      phaseMap.set(String(p.value).trim(), p);
+                    }
+                  });
+                  let localHasExtraPhase = false;
+                  (customPaymentPhases || []).forEach(lp => {
+                    const k = lp && lp.value ? String(lp.value).trim() : '';
+                    if (k && !blacklist.includes('phase_' + k) && !phaseMap.has(k)) {
+                      phaseMap.set(k, lp);
+                      localHasExtraPhase = true;
+                    }
+                  });
+                  customPaymentPhases = Array.from(phaseMap.values());
                   localStorage.setItem('RENOBOOK_PAYMENT_PHASES', JSON.stringify(customPaymentPhases));
+                  if (localHasExtraPhase && typeof persistPaymentPhasesToCloud === 'function') {
+                    persistPaymentPhasesToCloud(customPaymentPhases);
+                  }
                   syncPaymentPhaseDropdown();
                   renderAdminPaymentPhasesList();
                 }
               } catch (pe) {}
+            } else if (Array.isArray(customPaymentPhases) && customPaymentPhases.length > DEFAULT_PAYMENT_PHASES.length && typeof persistPaymentPhasesToCloud === 'function') {
+              persistPaymentPhasesToCloud(customPaymentPhases);
             }
             const subconCfgRow = itemRes.data.find(i => String(i.description || '').startsWith('__SUBCON_CONTRACTS__:'));
             if (subconCfgRow && subconCfgRow.description) {
               try {
                 const cloudSubcon = JSON.parse(subconCfgRow.description.slice('__SUBCON_CONTRACTS__:'.length));
                 if (Array.isArray(cloudSubcon)) {
-                  subconContractsData = cloudSubcon;
+                  const scById = new Map();
+                  cloudSubcon.forEach(sc => {
+                    if (sc && sc.id && !blacklist.includes('subcon_' + String(sc.id))) {
+                      scById.set(String(sc.id), sc);
+                    }
+                  });
+                  let localHasExtraSc = false;
+                  (subconContractsData || []).forEach(lsc => {
+                    if (!lsc || !lsc.id || blacklist.includes('subcon_' + String(lsc.id))) return;
+                    const k = String(lsc.id);
+                    const csc = scById.get(k);
+                    if (!csc) {
+                      scById.set(k, lsc);
+                      localHasExtraSc = true;
+                    } else if ((lsc.updated_at || '') > (csc.updated_at || '')) {
+                      scById.set(k, lsc);
+                      localHasExtraSc = true;
+                    }
+                  });
+                  subconContractsData = Array.from(scById.values());
                   localStorage.setItem('RENOBOOK_SUBCON_CONTRACTS', JSON.stringify(subconContractsData));
+                  if (localHasExtraSc && typeof persistSubconContractsToCloud === 'function') {
+                    persistSubconContractsToCloud(subconContractsData);
+                  }
                 }
               } catch (se) {}
+            } else if (Array.isArray(subconContractsData) && subconContractsData.length > 0 && typeof persistSubconContractsToCloud === 'function') {
+              persistSubconContractsToCloud(subconContractsData);
             }
             const appPinRow = itemRes.data.find(i => String(i.description || '').startsWith('__APP_PIN_DIGEST__:'));
             if (appPinRow && appPinRow.description) {
@@ -7056,6 +7107,21 @@ END $$;`;
                       syncCategoryGroupSelectors();
                       renderAdminCategoriesOverview();
                     }
+                  }
+                  if (cloudPinnedCfg.payrollPosted && typeof cloudPinnedCfg.payrollPosted === 'object') {
+                    const localPosted = getPayrollPostedMap();
+                    const mergedPosted = { ...cloudPinnedCfg.payrollPosted, ...localPosted };
+                    localStorage.setItem('RENOBOOK_PAYROLL_POSTED', JSON.stringify(mergedPosted));
+                  }
+                  if (cloudPinnedCfg.wageOverrides && typeof cloudPinnedCfg.wageOverrides === 'object') {
+                    const localOverrides = getWorkerWageOverridesMap();
+                    const mergedOverrides = { ...cloudPinnedCfg.wageOverrides, ...localOverrides };
+                    localStorage.setItem('RENOBOOK_WORKER_WAGE_OVERRIDES', JSON.stringify(mergedOverrides));
+                  }
+                  if (cloudPinnedCfg.tradeWages && typeof cloudPinnedCfg.tradeWages === 'object') {
+                    const localTrade = getTradeWagesConfig();
+                    const mergedTrade = { ...localTrade, ...cloudPinnedCfg.tradeWages };
+                    localStorage.setItem('RENOBOOK_TRADE_WAGES', JSON.stringify(mergedTrade));
                   }
                   if (typeof renderQuickWorkerAvatarGrid === 'function') renderQuickWorkerAvatarGrid();
                   if (typeof renderAdminPinnedWorkersManager === 'function') renderAdminPinnedWorkersManager();
@@ -8402,19 +8468,17 @@ END $$;`;
           category_id: catId,
           category_name: cat,
           category_group: group,
-          remarks: remark || null,
-          receipt_image_url: currentQuickPhotoBase64 || null
+          remarks: remark || null
         };
 
         let insertedExp = null;
         let queuedOfflineExp = false;
         if (supabaseClient && navigator.onLine !== false) {
           try {
-            let { data, error } = await supabaseClient.from('expenses').insert([expPayload]).select();
+            const tryExpPayload = currentQuickPhotoBase64 ? { ...expPayload, receipt_image_url: currentQuickPhotoBase64 } : expPayload;
+            let { data, error } = await supabaseClient.from('expenses').insert([tryExpPayload]).select();
             if (error && currentQuickPhotoBase64) {
-              const fallbackPayload = { ...expPayload };
-              delete fallbackPayload.receipt_image_url;
-              const retryRes = await supabaseClient.from('expenses').insert([fallbackPayload]).select();
+              const retryRes = await supabaseClient.from('expenses').insert([expPayload]).select();
               data = retryRes.data;
               error = retryRes.error;
             }
@@ -12653,6 +12717,9 @@ END $$;`;
             customCatMap: CATEGORY_MAP,
             customGroups: CATEGORY_GROUP_LABELS,
             voMap: voMapObj,
+            payrollPosted: typeof getPayrollPostedMap === 'function' ? getPayrollPostedMap() : {},
+            wageOverrides: typeof getWorkerWageOverridesMap === 'function' ? getWorkerWageOverridesMap() : {},
+            tradeWages: typeof getTradeWagesConfig === 'function' ? getTradeWagesConfig() : {},
             deletedIds: getDeletedIdsBlacklist().slice(-500)
           });
           const { data: existing } = await supabaseClient.from('catalog_items').select('id').like('description', '__PINNED_WORKERS__:%').limit(1);
@@ -12973,6 +13040,7 @@ END $$;`;
         const map = getWorkerWageOverridesMap();
         map[workerName.trim()] = Number(wageNum) || 0;
         localStorage.setItem('RENOBOOK_WORKER_WAGE_OVERRIDES', JSON.stringify(map));
+        if (typeof scheduleCloudMetaBundleSync === 'function') scheduleCloudMetaBundleSync();
       } catch (e) {}
     }
 
@@ -13121,12 +13189,15 @@ END $$;`;
     async function syncCloudWorkersTable() {
       if (!supabaseClient) return;
       try {
+        const blacklist = getDeletedIdsBlacklist();
         const { data, error } = await supabaseClient.from('workers').select('*');
-        if (!error && Array.isArray(data) && data.length > 0) {
+        if (!error && Array.isArray(data)) {
           let changed = false;
+          const cloudByName = new Map();
           data.forEach(row => {
             const cName = (row.name || '').trim();
-            if (!cName) return;
+            if (!cName || blacklist.includes('worker_name_' + cName)) return;
+            cloudByName.set(cName, row);
             const cWage = Number(row.daily_wage || 0);
             if (cWage > 0) setWorkerWageOverride(cName, cWage);
             const existing = workerRegistryData.find(w => (w.name || '').trim() === cName);
@@ -13148,6 +13219,32 @@ END $$;`;
               changed = true;
             }
           });
+          // 過濾已被另一部機刪除嘅師傅
+          const beforeLen = workerRegistryData.length;
+          workerRegistryData = workerRegistryData.filter(w => !blacklist.includes('worker_name_' + String(w.name || '').trim()));
+          if (workerRegistryData.length !== beforeLen) changed = true;
+
+          // 若本機（例如 iPad）有手動新增或改過日薪嘅師傅尚未同步上雲端 workers 表，自動補傳
+          const overrides = getWorkerWageOverridesMap();
+          const toUpsertCloud = [];
+          workerRegistryData.forEach(w => {
+            const wName = String(w.name || '').trim();
+            if (!wName || blacklist.includes('worker_name_' + wName)) return;
+            const isManualOrOverridden = Boolean(w.is_manual_active) || overrides[wName] !== undefined;
+            if (isManualOrOverridden && !cloudByName.has(wName)) {
+              toUpsertCloud.push({
+                name: wName,
+                daily_wage: Number(w.wage || overrides[wName] || 1500),
+                phone: w.phone || null,
+                bank_name: (w.bank_name && w.bank_name !== '待補登記') ? w.bank_name : null,
+                bank_account: (w.bank_acc && w.bank_acc !== '-') ? w.bank_acc : null
+              });
+            }
+          });
+          if (toUpsertCloud.length > 0 && !window._hasAutoPushedLocalWorkersOnce) {
+            window._hasAutoPushedLocalWorkersOnce = true;
+            supabaseClient.from('workers').upsert(toUpsertCloud, { onConflict: 'name' }).then(() => {}).catch(() => {});
+          }
           if (changed) {
             try { localStorage.setItem('RENOBOOK_WORKERS', JSON.stringify(workerRegistryData)); } catch (e) {}
             populateWorkerSelectors();
@@ -13262,14 +13359,20 @@ END $$;`;
       const sourceList = rawCombined.length > 0 ? rawCombined : DEFAULT_LABOR_LOGS_SEED;
       const seenIds = new Set();
       const deduped = [];
+      const seenSigs = new Set();
       sourceList.forEach(item => {
         if (!item || isLabDeleted(item.id)) return;
-        const idKey = item.id != null ? String(item.id) : `${item.worker_name}_${item.work_date}_${item.project_code}_${item.work_days}`;
+        const cleanDate = sanitizeDateYearTypo(item.work_date || '', item.project_code, item);
+        const idKey = item.id != null ? String(item.id) : `${item.worker_name}_${cleanDate}_${item.project_code}_${item.work_days}`;
+        const sigKey = `${String(item.worker_name || '').trim()}_${cleanDate}_${String(item.project_code || '').trim()}_${Number(item.work_days || 0)}`;
+        const isLocalTemp = item.id != null && String(item.id).length >= 13;
+        if (isLocalTemp && seenSigs.has(sigKey)) return;
         if (!seenIds.has(idKey)) {
           seenIds.add(idKey);
+          seenSigs.add(sigKey);
           deduped.push({
             ...item,
-            work_date: sanitizeDateYearTypo(item.work_date || '', item.project_code, item)
+            work_date: cleanDate
           });
         }
       });
@@ -14009,7 +14112,7 @@ END $$;`;
       await removeWorkerPeriodPayrollExpenses(row.startDate, row.endDate, wName, prevEntry);
 
       delete postedMap[periodKey];
-      try { localStorage.setItem('RENOBOOK_PAYROLL_POSTED', JSON.stringify(postedMap)); } catch (e) {}
+      try { localStorage.setItem('RENOBOOK_PAYROLL_POSTED', JSON.stringify(postedMap)); scheduleCloudMetaBundleSync(); } catch (e) {}
 
       await loadAllData(false);
       renderSemiMonthlyPayroll();
@@ -14042,25 +14145,32 @@ END $$;`;
       row.projBreakList.forEach(pb => {
         if (pb.days <= 0) return;
         const subAmount = Math.round(pb.days * wageNum * 100) / 100;
-        expenseBatch.push({
+        const itemPayload = {
           project_code: pb.code,
           payment_date: row.endDate,
           payment_method: 'fps',
           payee: w.name,
-          receipt_no: `PAY-${row.endDate.replace(/-/g, '')}`,
+          invoice_no: `PAY-${row.endDate.replace(/-/g, '')}`,
           amount: subAmount,
           category_id: 27,
           category_name: '公司-日薪工人',
           category_group: 'subcon',
-          remarks: `[半月出糧 ${row.startDate}至${row.endDate}] ${w.name} 於 ${pb.name} 開工 ${pb.days} 日 × 日薪 $${wageNum}`,
-          receipt_image_url: row.receiptB64 || null
-        });
+          remarks: `[半月出糧 ${row.startDate}至${row.endDate}] ${w.name} 於 ${pb.name} 開工 ${pb.days} 日 × 日薪 $${wageNum}`
+        };
+        if (row.receiptB64) itemPayload.receipt_image_url = row.receiptB64;
+        expenseBatch.push(itemPayload);
       });
 
       let insertedRows = [];
       if (supabaseClient && expenseBatch.length > 0) {
         try {
-          const { data, error } = await supabaseClient.from('expenses').insert(expenseBatch).select();
+          let { data, error } = await supabaseClient.from('expenses').insert(expenseBatch).select();
+          if (error && expenseBatch.some(x => x.receipt_image_url)) {
+            const strippedBatch = expenseBatch.map(({ receipt_image_url, ...rest }) => rest);
+            const retryRes = await supabaseClient.from('expenses').insert(strippedBatch).select();
+            data = retryRes.data;
+            error = retryRes.error;
+          }
           if (error) {
             if (btnEl) setCloudButtonStatus(btnEl, 'error', '❌ 寫入失敗');
             showToast('❌ 寫入雲端開支表失敗：' + error.message);
@@ -14101,7 +14211,7 @@ END $$;`;
         expenseIds: insertedIds,
         updatedAt: new Date().toISOString()
       };
-      try { localStorage.setItem('RENOBOOK_PAYROLL_POSTED', JSON.stringify(postedMap)); } catch (e) {}
+      try { localStorage.setItem('RENOBOOK_PAYROLL_POSTED', JSON.stringify(postedMap)); scheduleCloudMetaBundleSync(); } catch (e) {}
 
       await loadAllData(false);
       renderSemiMonthlyPayroll();
@@ -14134,7 +14244,7 @@ END $$;`;
           await supabaseClient.from('expenses').delete().like('remarks', `${remarkPrefix}%`);
         } catch (e) {}
       }
-      try { localStorage.setItem('RENOBOOK_PAYROLL_POSTED', JSON.stringify(postedMap)); } catch (e) {}
+      try { localStorage.setItem('RENOBOOK_PAYROLL_POSTED', JSON.stringify(postedMap)); scheduleCloudMetaBundleSync(); } catch (e) {}
 
       await loadAllData(false);
       renderSemiMonthlyPayroll();
@@ -14184,19 +14294,20 @@ END $$;`;
           if (pb.days <= 0) return;
           const subAmount = Math.round(pb.days * wageNum * 100) / 100;
           rowKeyByBatchIdx.push(r.periodKey);
-          expenseBatch.push({
+          const itemPayload = {
             project_code: pb.code,
             payment_date: r.endDate,
             payment_method: 'fps',
             payee: w.name,
-            receipt_no: `PAY-${r.endDate.replace(/-/g, '')}`,
+            invoice_no: `PAY-${r.endDate.replace(/-/g, '')}`,
             amount: subAmount,
             category_id: 27,
             category_name: '公司-日薪工人',
             category_group: 'subcon',
-            remarks: `[半月出糧 ${r.startDate}至${r.endDate}] ${w.name} 於 ${pb.name} 開工 ${pb.days} 日 × 日薪 $${wageNum}`,
-            receipt_image_url: r.receiptB64 || null
-          });
+            remarks: `[半月出糧 ${r.startDate}至${r.endDate}] ${w.name} 於 ${pb.name} 開工 ${pb.days} 日 × 日薪 $${wageNum}`
+          };
+          if (r.receiptB64) itemPayload.receipt_image_url = r.receiptB64;
+          expenseBatch.push(itemPayload);
         });
       });
 
@@ -14208,7 +14319,13 @@ END $$;`;
       let insertedRows = [];
       if (supabaseClient) {
         try {
-          const { data, error } = await supabaseClient.from('expenses').insert(expenseBatch).select();
+          let { data, error } = await supabaseClient.from('expenses').insert(expenseBatch).select();
+          if (error && expenseBatch.some(x => x.receipt_image_url)) {
+            const strippedBatch = expenseBatch.map(({ receipt_image_url, ...rest }) => rest);
+            const retryRes = await supabaseClient.from('expenses').insert(strippedBatch).select();
+            data = retryRes.data;
+            error = retryRes.error;
+          }
           if (error) {
             setCloudButtonStatus(btn, 'error', '❌ 寫入雲端開支表失敗');
             showToast('❌ 寫入雲端開支表失敗：' + error.message);
@@ -14268,6 +14385,7 @@ END $$;`;
           };
         });
         localStorage.setItem('RENOBOOK_PAYROLL_POSTED', JSON.stringify(postedMap));
+        scheduleCloudMetaBundleSync();
       } catch (e) {}
 
       incrementUserAddedRecordCount(expenseBatch.length);
@@ -14687,6 +14805,7 @@ END $$;`;
         return;
       }
       const removed = customPaymentPhases.splice(idx, 1);
+      if (removed[0] && removed[0].value) addIdToDeletedBlacklist('phase_' + String(removed[0].value).trim());
       persistPaymentPhasesToCloud(customPaymentPhases);
       syncPaymentPhaseDropdown();
       renderAdminPaymentPhasesList();
@@ -16592,6 +16711,7 @@ END $$;`;
         return;
       }
       pendingDeleteSubconId = null;
+      if (contractId) addIdToDeletedBlacklist('subcon_' + String(contractId));
       subconContractsData = (subconContractsData || []).filter(x => String(x.id) !== String(contractId));
       await persistSubconContractsToCloud(subconContractsData);
       renderSubconModalTable();
