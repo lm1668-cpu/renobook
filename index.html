@@ -1509,7 +1509,7 @@
           <div class="p-3.5 sm:p-4 bg-blue-50/60 border-b border-blue-100 flex justify-between items-center gap-2">
             <div class="flex items-center gap-2 min-w-0">
               <span class="w-6 h-6 shrink-0 rounded bg-blue-500 text-white flex items-center justify-center text-xs font-bold">1</span>
-              <h3 class="font-bold text-blue-900 text-xs sm:text-sm truncate">自購輔料支出總覽 (9大項)</h3>
+              <h3 id="det-aux-header-title" class="font-bold text-blue-900 text-xs sm:text-sm truncate">自購輔料支出總覽 (9大項)</h3>
             </div>
             <span class="text-[11px] sm:text-xs font-bold text-blue-700 font-mono whitespace-nowrap shrink-0" id="det-aux-total-badge">HK$ 0</span>
           </div>
@@ -1527,7 +1527,7 @@
           <div class="p-3.5 sm:p-4 bg-emerald-50/60 border-b border-emerald-100 flex justify-between items-center gap-2">
             <div class="flex items-center gap-2 min-w-0">
               <span class="w-6 h-6 shrink-0 rounded bg-emerald-500 text-white flex items-center justify-center text-xs font-bold">2</span>
-              <h3 class="font-bold text-emerald-900 text-xs sm:text-sm truncate">代購主材支出總覽 (7大項)</h3>
+              <h3 id="det-main-header-title" class="font-bold text-emerald-900 text-xs sm:text-sm truncate">代購主材支出總覽 (7大項)</h3>
             </div>
             <span class="text-[11px] sm:text-xs font-bold text-emerald-700 font-mono whitespace-nowrap shrink-0" id="det-main-total-badge">HK$ 0</span>
           </div>
@@ -1545,7 +1545,7 @@
           <div class="p-3.5 sm:p-4 bg-amber-50/60 border-b border-amber-100 flex justify-between items-center gap-2">
             <div class="flex items-center gap-2 min-w-0">
               <span class="w-6 h-6 shrink-0 rounded bg-amber-500 text-slate-950 flex items-center justify-center text-xs font-bold">3</span>
-              <h3 class="font-bold text-amber-900 text-xs sm:text-sm truncate">外判人工費總覽 (19大項)</h3>
+              <h3 id="det-subcon-header-title" class="font-bold text-amber-900 text-xs sm:text-sm truncate">外判人工費總覽 (19大項)</h3>
             </div>
             <span class="text-[11px] sm:text-xs font-bold text-amber-800 font-mono whitespace-nowrap shrink-0" id="det-subcon-total-badge">HK$ 0</span>
           </div>
@@ -4679,18 +4679,18 @@ END $$;</code></pre>
     function getDeletedBlacklist() {
       return getDeletedIdsBlacklist();
     }
-    async function persistDeletedBlacklistToCloud(list) {
-      if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
-      try {
-        const trimmed = (list || []).slice(-500);
-        const payloadStr = '__DELETED_IDS__:' + JSON.stringify(trimmed);
-        const { data: existing } = await supabaseClient.from('catalog_items').select('id').like('description', '__DELETED_IDS__:%').limit(1);
-        if (existing && existing[0] && existing[0].id) {
-          await supabaseClient.from('catalog_items').update({ description: payloadStr }).eq('id', existing[0].id);
-        } else {
-          await supabaseClient.from('catalog_items').insert([{ description: payloadStr, default_amount: 0 }]);
+    let _cloudMetaSyncTimer = null;
+    function scheduleCloudMetaBundleSync() {
+      if (_cloudMetaSyncTimer) clearTimeout(_cloudMetaSyncTimer);
+      _cloudMetaSyncTimer = setTimeout(() => {
+        _cloudMetaSyncTimer = null;
+        if (typeof persistPinnedWorkersToCloud === 'function') {
+          persistPinnedWorkersToCloud(false);
         }
-      } catch (e) {}
+      }, 600);
+    }
+    async function persistDeletedBlacklistToCloud(list) {
+      scheduleCloudMetaBundleSync();
     }
     function addIdToDeletedBlacklist(id) {
       try {
@@ -6683,12 +6683,23 @@ END $$;`;
 
           if (myLoadSeq !== _loadAllDataSeq) return;
           if (!itemRes.error && Array.isArray(itemRes.data)) {
-            const delRow = itemRes.data.find(i => String(i.description || '').startsWith('__DELETED_IDS__:'));
-            if (delRow && delRow.description) {
+            // 自動清除先前誤寫入常用收費項目之 __DELETED_IDS__: / __VO_ITEMS_MAP__: / __CUSTOM_CAT_GROUPS__: 異常行
+            const strayMetaRows = itemRes.data.filter(i => {
+              const d = String(i.description || '');
+              return d.startsWith('__DELETED_IDS__:') || d.startsWith('__VO_ITEMS_MAP__:') || d.startsWith('__CUSTOM_CAT_GROUPS__:');
+            });
+            if (strayMetaRows.length > 0) {
+              const strayIds = strayMetaRows.map(r => r.id).filter(Boolean);
+              if (strayIds.length > 0) {
+                supabaseClient.from('catalog_items').delete().in('id', strayIds).then(() => {}).catch(() => {});
+              }
+            }
+            const pinnedWRowEarly = itemRes.data.find(i => String(i.description || '').startsWith('__PINNED_WORKERS__:'));
+            if (pinnedWRowEarly && pinnedWRowEarly.description) {
               try {
-                const cloudDel = JSON.parse(delRow.description.slice('__DELETED_IDS__:'.length));
-                if (Array.isArray(cloudDel)) {
-                  const mergedDel = Array.from(new Set([...blacklist, ...cloudDel.map(String)])).slice(-500);
+                const earlyCfg = JSON.parse(pinnedWRowEarly.description.slice('__PINNED_WORKERS__:'.length));
+                if (earlyCfg && Array.isArray(earlyCfg.deletedIds)) {
+                  const mergedDel = Array.from(new Set([...blacklist, ...earlyCfg.deletedIds.map(String)])).slice(-500);
                   if (mergedDel.length !== blacklist.length) {
                     blacklist = mergedDel;
                     localStorage.setItem('INV_DELETED_BLACKLIST', JSON.stringify(blacklist));
@@ -6697,16 +6708,19 @@ END $$;`;
               } catch (de) {}
             }
           }
-          if (!catRes.error && catRes.data && catRes.data.length > 0) {
+          if (!catRes.error && Array.isArray(catRes.data)) {
             categoriesDict = catRes.data;
             let catMapUpdated = false;
+            const cloudCatNames = new Set();
             catRes.data.forEach(c => {
               if (!c || !c.category_name) return;
               const cName = (c.category_name === '公司-車輛費用(油費/泊車/牌費)') ? '公司-車輛費用' : String(c.category_name).trim();
+              cloudCatNames.add(cName);
               if (blacklist.includes('cat_name_' + cName)) return;
               CATEGORY_ID_BY_NAME[cName] = c.id;
               const grp = c.category_group === 'uncategorized' ? 'company' : (c.category_group || 'subcon');
-              if (CATEGORY_MAP[grp] && !CATEGORY_MAP[grp].includes(cName)) {
+              if (!CATEGORY_MAP[grp]) CATEGORY_MAP[grp] = [];
+              if (!CATEGORY_MAP[grp].includes(cName)) {
                 CATEGORY_MAP[grp].push(cName);
                 catMapUpdated = true;
               }
@@ -6715,6 +6729,21 @@ END $$;`;
               try { localStorage.setItem('RENOBOOK_CUSTOM_CAT_MAP', JSON.stringify(CATEGORY_MAP)); } catch (e) {}
               syncCategoryGroupSelectors();
               renderAdminCategoriesOverview();
+            }
+            // 若本機（例如 iPad）有自訂細項尚未寫入雲端 categories 表，自動補傳上雲端，確保手機即時見到
+            if (typeof syncLocalCustomCategoriesToCloud === 'function') {
+              let hasLocalUnpushedCat = false;
+              Object.entries(CATEGORY_MAP || {}).forEach(([gk, arr]) => {
+                (arr || []).forEach(cName => {
+                  if (cName && !cloudCatNames.has(cName) && !blacklist.includes('cat_name_' + cName)) {
+                    hasLocalUnpushedCat = true;
+                  }
+                });
+              });
+              if (hasLocalUnpushedCat && !window._hasAutoPushedLocalCatsOnce) {
+                window._hasAutoPushedLocalCatsOnce = true;
+                syncLocalCustomCategoriesToCloud().catch(() => {});
+              }
             }
           }
           if (!pnlRes.error && pnlRes.data && pnlRes.data.length > 0) {
@@ -6998,34 +7027,40 @@ END $$;`;
                     workerCustomAvatarMap = { ...workerCustomAvatarMap, ...cloudPinnedCfg.avatars };
                     localStorage.setItem('RENOBOOK_WORKER_AVATARS', JSON.stringify(workerCustomAvatarMap));
                   }
+                  if (cloudPinnedCfg.voMap && typeof cloudPinnedCfg.voMap === 'object') {
+                    const localVoMap = JSON.parse(localStorage.getItem('RENOBOOK_VO_MAP') || '{}');
+                    const mergedVoMap = { ...cloudPinnedCfg.voMap, ...localVoMap };
+                    Object.entries(cloudPinnedCfg.voMap).forEach(([k, v]) => {
+                      if (Array.isArray(v) && v.length > 0) mergedVoMap[k] = v;
+                    });
+                    localStorage.setItem('RENOBOOK_VO_MAP', JSON.stringify(mergedVoMap));
+                  }
+                  if (cloudPinnedCfg.customGroups && typeof cloudPinnedCfg.customGroups === 'object') {
+                    CATEGORY_GROUP_LABELS = { ...CATEGORY_GROUP_LABELS, ...cloudPinnedCfg.customGroups };
+                    localStorage.setItem('RENOBOOK_CUSTOM_GROUPS', JSON.stringify(CATEGORY_GROUP_LABELS));
+                  }
+                  if (cloudPinnedCfg.customCatMap && typeof cloudPinnedCfg.customCatMap === 'object') {
+                    let catMerged = false;
+                    Object.entries(cloudPinnedCfg.customCatMap).forEach(([gk, arr]) => {
+                      if (!CATEGORY_MAP[gk]) CATEGORY_MAP[gk] = [];
+                      (arr || []).forEach(rawC => {
+                        const c = (rawC === '公司-車輛費用(油費/泊車/牌費)') ? '公司-車輛費用' : String(rawC || '').trim();
+                        if (c && !blacklist.includes('cat_name_' + c) && !CATEGORY_MAP[gk].includes(c)) {
+                          CATEGORY_MAP[gk].push(c);
+                          catMerged = true;
+                        }
+                      });
+                    });
+                    if (catMerged) {
+                      localStorage.setItem('RENOBOOK_CUSTOM_CAT_MAP', JSON.stringify(CATEGORY_MAP));
+                      syncCategoryGroupSelectors();
+                      renderAdminCategoriesOverview();
+                    }
+                  }
                   if (typeof renderQuickWorkerAvatarGrid === 'function') renderQuickWorkerAvatarGrid();
                   if (typeof renderAdminPinnedWorkersManager === 'function') renderAdminPinnedWorkersManager();
                 }
               } catch (pwe) {}
-            }
-            const voMapRow = itemRes.data.find(i => String(i.description || '').startsWith('__VO_ITEMS_MAP__:'));
-            if (voMapRow && voMapRow.description) {
-              try {
-                const cloudVoMap = JSON.parse(voMapRow.description.slice('__VO_ITEMS_MAP__:'.length));
-                if (cloudVoMap && typeof cloudVoMap === 'object') {
-                  const localVoMap = JSON.parse(localStorage.getItem('RENOBOOK_VO_MAP') || '{}');
-                  const mergedVoMap = { ...cloudVoMap, ...localVoMap };
-                  Object.entries(cloudVoMap).forEach(([k, v]) => {
-                    if (Array.isArray(v) && v.length > 0) mergedVoMap[k] = v;
-                  });
-                  localStorage.setItem('RENOBOOK_VO_MAP', JSON.stringify(mergedVoMap));
-                }
-              } catch (ve) {}
-            }
-            const customGrpRow = itemRes.data.find(i => String(i.description || '').startsWith('__CUSTOM_CAT_GROUPS__:'));
-            if (customGrpRow && customGrpRow.description) {
-              try {
-                const cloudGrps = JSON.parse(customGrpRow.description.slice('__CUSTOM_CAT_GROUPS__:'.length));
-                if (cloudGrps && typeof cloudGrps === 'object') {
-                  CATEGORY_GROUP_LABELS = { ...CATEGORY_GROUP_LABELS, ...cloudGrps };
-                  localStorage.setItem('RENOBOOK_CUSTOM_GROUPS', JSON.stringify(CATEGORY_GROUP_LABELS));
-                }
-              } catch (ge) {}
             }
             const quoteOnlyRow = itemRes.data.find(i => String(i.description || '').startsWith('__QUOTE_ONLY_PROJECTS__:'));
             const isLocalDirty = localStorage.getItem('RENOBOOK_QUOTE_ONLY_DIRTY') === '1';
@@ -7052,21 +7087,10 @@ END $$;`;
               // 雲端尚未建立 __QUOTE_ONLY_PROJECTS__ 紀錄（或先前因舊欄位未寫入），自動將本機已標記嘅純報價項目同步上雲端
               persistQuoteOnlyProjectsToSupabase();
             }
-            catalogItemsData = itemRes.data.filter(i =>
-              !blacklist.includes(String(i.id)) &&
-              !String(i.description || '').startsWith('__GH_CFG__:') &&
-              !String(i.description || '').startsWith('__PAYMENT_PHASES__:') &&
-              !String(i.description || '').startsWith('__SUBCON_CONTRACTS__:') &&
-              !String(i.description || '').startsWith('__COMMON_CLIENTS__:') &&
-              !String(i.description || '').startsWith('__INCOME_RECEIPT_PHOTOS__:') &&
-              !String(i.description || '').startsWith('__PINNED_WORKERS__:') &&
-              !String(i.description || '').startsWith('__PIN_BANNER__:') &&
-              !String(i.description || '').startsWith('__APP_PIN_DIGEST__:') &&
-              !String(i.description || '').startsWith('__VO_ITEMS_MAP__:') &&
-              !String(i.description || '').startsWith('__CUSTOM_CAT_GROUPS__:') &&
-              !String(i.description || '').startsWith('__DELETED_IDS__:') &&
-              !String(i.description || '').startsWith('__QUOTE_ONLY_PROJECTS__:')
-            );
+            catalogItemsData = itemRes.data.filter(i => {
+              const desc = String(i.description || '').trim();
+              return !blacklist.includes(String(i.id)) && !/^__[A-Z0-9_]+__:/.test(desc);
+            });
             try { localStorage.setItem('LOCAL_ITEMS', JSON.stringify(catalogItemsData)); } catch (e) {}
           }
         } catch (e) {}
@@ -7088,14 +7112,10 @@ END $$;`;
         }
         if (catalogItemsData.length === 0) {
           try {
-            catalogItemsData = JSON.parse(localStorage.getItem('LOCAL_ITEMS') || '[]').filter(i =>
-              !blacklist.includes(String(i.id)) &&
-              !String(i.description || '').startsWith('__GH_CFG__:') &&
-              !String(i.description || '').startsWith('__PAYMENT_PHASES__:') &&
-              !String(i.description || '').startsWith('__SUBCON_CONTRACTS__:') &&
-              !String(i.description || '').startsWith('__PINNED_WORKERS__:') &&
-              !String(i.description || '').startsWith('__PIN_BANNER__:')
-            );
+            catalogItemsData = JSON.parse(localStorage.getItem('LOCAL_ITEMS') || '[]').filter(i => {
+              const desc = String(i.description || '').trim();
+              return !blacklist.includes(String(i.id)) && !/^__[A-Z0-9_]+__:/.test(desc);
+            });
           } catch (e) {}
         }
       }
@@ -7691,6 +7711,12 @@ END $$;`;
         });
       };
 
+      const auxHdr = document.getElementById('det-aux-header-title');
+      if (auxHdr) auxHdr.textContent = `自購輔料支出總覽 (${(CATEGORY_MAP.aux || []).length}大項)`;
+      const mainHdr = document.getElementById('det-main-header-title');
+      if (mainHdr) mainHdr.textContent = `代購主材支出總覽 (${(CATEGORY_MAP.main || []).length}大項)`;
+      const subHdr = document.getElementById('det-subcon-header-title');
+      if (subHdr) subHdr.textContent = `外判人工費總覽 (${(CATEGORY_MAP.subcon || []).length}大項)`;
       renderSubTable('det-table-aux', bd.aux || {}, 'aux');
       renderSubTable('det-table-main', bd.main || {}, 'main');
       renderSubTable('det-table-subcon', bd.subcon || {}, 'subcon');
@@ -7740,6 +7766,46 @@ END $$;`;
       if (curProjObj) {
         const metaEl = document.getElementById('det-subtitle-meta');
         if (metaEl) metaEl.innerText = `接單/開工日: ${getDisplayProjectDate(curProjObj)} · 介紹人: ${curProjObj.pic || '-'} · 客戶: ${resolveProjectCustomerName(curProjObj)}`;
+        // 將此工程實際開支明細中屬於「自訂細項」嘅金額即時歸入工程財務明細三大分類表
+        if (Array.isArray(expRows) && expRows.length > 0 && curProjObj.breakdown) {
+          const byCatSum = {};
+          expRows.forEach(r => {
+            const cn = String(r.category_name || r.category || '').trim();
+            if (cn) byCatSum[cn] = roundNumber((byCatSum[cn] || 0) + Number(r.amount || 0));
+          });
+          let bdUpdated = false;
+          ['aux', 'main', 'subcon'].forEach(gk => {
+            if (!curProjObj.breakdown[gk]) curProjObj.breakdown[gk] = {};
+            (CATEGORY_MAP[gk] || []).forEach(cName => {
+              if (byCatSum[cName] !== undefined && (curProjObj.breakdown[gk][cName] === undefined || curProjObj.breakdown[gk][cName] === 0)) {
+                curProjObj.breakdown[gk][cName] = byCatSum[cName];
+                bdUpdated = true;
+              }
+            });
+          });
+          if (bdUpdated && selectedDetailCode === projectCode) {
+            const renderSubTableLive = (containerId, dataMap, groupKey) => {
+              const tbody = document.getElementById(containerId);
+              if (!tbody) return;
+              tbody.innerHTML = '';
+              const normalizedMap = {};
+              (CATEGORY_MAP[groupKey] || []).forEach(c => { normalizedMap[c] = 0; });
+              Object.entries(dataMap || {}).forEach(([k, v]) => {
+                normalizedMap[k] = (normalizedMap[k] || 0) + (Number(v) || 0);
+              });
+              Object.entries(normalizedMap).forEach(([name, val]) => {
+                const tr = document.createElement('tr');
+                const hasVal = Number(val) > 0;
+                tr.className = hasVal ? 'text-slate-800 font-medium hover:bg-slate-50/80' : 'text-slate-400';
+                tr.innerHTML = `<td class="py-1.5 pr-2 whitespace-nowrap">${escapeHtml(name)}</td><td class="py-1.5 pl-2 text-right font-mono whitespace-nowrap ${hasVal ? 'text-slate-900 font-bold' : 'text-slate-400'}">${fmtMoney(val)}</td>`;
+                tbody.appendChild(tr);
+              });
+            };
+            renderSubTableLive('det-table-aux', curProjObj.breakdown.aux || {}, 'aux');
+            renderSubTableLive('det-table-main', curProjObj.breakdown.main || {}, 'main');
+            renderSubTableLive('det-table-subcon', curProjObj.breakdown.subcon || {}, 'subcon');
+          }
+        }
       }
       const cExp = document.getElementById('pledger-count-exp');
       const cInc = document.getElementById('pledger-count-inc');
@@ -9040,18 +9106,23 @@ END $$;`;
           { id: 50, category_group: 'company', category_name: '公司-車輛費用', excel_col: 'NONE', excel_title: '18. 車輛費用', display_order: 50 },
           { id: 51, category_group: 'company', category_name: '公司-差旅及人事補貼', excel_col: 'NONE', excel_title: '19. 差旅、油費及人事補貼費用', display_order: 51 },
           { id: 52, category_group: 'company', category_name: '公司-招待費用', excel_col: 'NONE', excel_title: '20. 招待費用', display_order: 52 },
-          { id: 53, category_group: 'company', category_name: '公司-備用零錢', excel_col: 'NONE', excel_title: '21. 備用零錢', display_order: 53 }
+          { id: 53, category_group: 'company', category_name: '公司-備用零錢', excel_col: 'NONE', excel_title: '21. 備用零錢', display_order: 53 },
+          { id: 54, category_group: 'subcon', category_name: '外判-冷氣工程', excel_col: 'CUSTOM', excel_title: '外判-冷氣工程', display_order: 54 }
         ];
         await supabaseClient.from('categories').upsert(stdCats, { onConflict: 'id' });
         try {
           await supabaseClient.from('expenses').update({ category_name: '公司-車輛費用' }).eq('category_name', '公司-車輛費用(油費/泊車/牌費)');
           await migrateChengChiManToAcSubcon(true);
+          if (typeof syncLocalCustomCategoriesToCloud === 'function') {
+            await syncLocalCustomCategoriesToCloud();
+          }
         } catch (ve) {}
-        logLine('   ✅ 已完成 54 項標準工程及公司營運收支分類同步（含 CHENG CHI MAN 轉歸「外判-冷氣工程」）', 'text-emerald-400');
+        logLine('   ✅ 已完成標準及本機自訂收支細項同步（含 iPad/手機跨裝置自訂細項及 CHENG CHI MAN 轉歸「外判-冷氣工程」）', 'text-emerald-400');
 
-        // Step 2: Sync projects, 29 introducers & quote-only status
-        logLine(`2/4 正在同步全部 ${rawProjects.length} 單工程主表、29 位介紹人及「只是報價」狀態...`, 'text-sky-300');
-        const projPayloads = rawProjects.map(p => ({
+        // Step 2: Sync projects, 29 introducers & quote-only status (優先保留雲端及本機最新修改之工程資料，絕不覆蓋已修改預算)
+        const sourceProjects = (Array.isArray(projects) && projects.length >= rawProjects.length) ? projects : rawProjects;
+        logLine(`2/4 正在同步全部 ${sourceProjects.length} 單工程主表、29 位介紹人及「只是報價」狀態...`, 'text-sky-300');
+        const projPayloads = sourceProjects.map(p => ({
           project_code: p.code,
           project_name: p.name || p.code,
           manager_pic: p.pic || null,
@@ -9078,11 +9149,12 @@ END $$;`;
         logLine(`   ✅ 已完成 ${projPayloads.length} 單工程主表、29 位介紹人及工程狀態對齊`, 'text-emerald-400');
 
         // Step 3: Sync worker registry, pinned avatars, subcon contracts, and clean up blank rows
-        logLine('3/4 正在同步日薪師傅名冊、常用頭像設定、判頭合約及清理空白異常紀錄...', 'text-sky-300');
+        logLine('3/4 正在同步日薪師傅名冊、常用頭像設定、判頭合約及清理 __DELETED_IDS__ 怪符號...', 'text-sky-300');
         try {
           await supabaseClient.from('incomes').delete().eq('project_code', 'COMPANY_OVERHEAD').gt('amount', 50000000);
           await supabaseClient.from('labor_days').delete().eq('work_days', 0).is('work_date', null);
           await supabaseClient.from('invoices').delete().in('invoice_number', ['2026-101', '2026-102', 'Q-2026-089']);
+          await supabaseClient.from('catalog_items').delete().or('description.like.__DELETED_IDS__:%,description.like.__VO_ITEMS_MAP__:%,description.like.__CUSTOM_CAT_GROUPS__:%');
         } catch (ce) {}
         if (workerRegistryData && workerRegistryData.length > 0) {
           const wRows = workerRegistryData.slice(0, 100).map(w => ({
@@ -9145,7 +9217,7 @@ END $$;`;
       // 所有工程編號下拉選單統一按日期次序排列 (跟隨目前日期排序方向，預設最新接單/開工優先)
       const dateSortedMode = (projectSortOrder === 'date_asc') ? 'date_asc' : 'date_desc';
       const sortedForDropdowns = sortProjectsArray(projects, dateSortedMode);
-      const formatProjOptionText = (p) => `[${getDisplayProjectDate(p)}] ${p.code} - ${p.name}`;
+      const formatProjOptionText = (p) => p.name || p.code;
 
       if (detailSelect) {
         const prevDet = selectedDetailCode || detailSelect.value;
@@ -9624,8 +9696,8 @@ END $$;`;
         const prev = projSel.value || 'ALL';
         const sortedProjs = sortProjectsArray(projects, 'date_desc');
         projSel.innerHTML = '<option value="ALL">🏗️ 全部工程及公司項目 (' + sortedProjs.length + ')</option>' +
-          '<option value="COMPANY_OVERHEAD">🏢 公司日常營運開支 (COMPANY_OVERHEAD · 項目 4–21)</option>' +
-          sortedProjs.map(p => `<option value="${escapeHtml(p.code)}">[${getDisplayProjectDate(p)}] ${escapeHtml(p.code)} - ${escapeHtml(p.name)}</option>`).join('');
+          '<option value="COMPANY_OVERHEAD">🏢 公司日常營運開支 (項目 4–21)</option>' +
+          sortedProjs.map(p => `<option value="${escapeHtml(p.code)}">${escapeHtml(p.name || p.code)}</option>`).join('');
         if (prev === 'ALL' || prev === 'COMPANY_OVERHEAD' || sortedProjs.some(p => p.code === prev)) projSel.value = prev;
       }
 
@@ -11345,15 +11417,7 @@ END $$;`;
         const map = JSON.parse(localStorage.getItem('RENOBOOK_VO_MAP') || '{}');
         map[projectCode] = voItems;
         localStorage.setItem('RENOBOOK_VO_MAP', JSON.stringify(map));
-        if (supabaseClient) {
-          const payloadStr = '__VO_ITEMS_MAP__:' + JSON.stringify(map);
-          const { data: existing } = await supabaseClient.from('catalog_items').select('id').like('description', '__VO_ITEMS_MAP__:%').limit(1);
-          if (existing && existing[0] && existing[0].id) {
-            await supabaseClient.from('catalog_items').update({ description: payloadStr }).eq('id', existing[0].id);
-          } else {
-            await supabaseClient.from('catalog_items').insert([{ description: payloadStr, default_amount: 0 }]);
-          }
-        }
+        scheduleCloudMetaBundleSync();
       } catch (e) {}
     }
 
@@ -12340,6 +12404,42 @@ END $$;`;
       populateMasterLedgerFilters();
     }
 
+    async function syncLocalCustomCategoriesToCloud() {
+      if (!supabaseClient) return;
+      try {
+        const blacklist = getDeletedIdsBlacklist();
+        const customRows = [];
+        let maxId = Math.max(54, ...Object.values(CATEGORY_ID_BY_NAME).map(n => Number(n) || 0));
+        Object.entries(CATEGORY_MAP || {}).forEach(([gk, arr]) => {
+          const dbGroup = ['aux', 'main', 'subcon', 'company', 'uncategorized'].includes(gk) ? gk : 'subcon';
+          (arr || []).forEach(rawName => {
+            const cName = String(rawName || '').trim();
+            if (!cName || blacklist.includes('cat_name_' + cName)) return;
+            let cid = Number(CATEGORY_ID_BY_NAME[cName] || 0);
+            if (!cid || cid < 1) {
+              maxId += 1;
+              cid = maxId;
+              CATEGORY_ID_BY_NAME[cName] = cid;
+            }
+            if (cid >= 54) {
+              customRows.push({
+                id: cid,
+                category_group: dbGroup,
+                category_name: cName,
+                excel_col: 'CUSTOM',
+                excel_title: cName,
+                display_order: cid
+              });
+            }
+          });
+        });
+        if (customRows.length > 0) {
+          await supabaseClient.from('categories').upsert(customRows, { onConflict: 'id' });
+        }
+        scheduleCloudMetaBundleSync();
+      } catch (e) {}
+    }
+
     async function addCustomCategoryGroup() {
       const btn = document.getElementById('btn-add-cat-group');
       const keyInput = document.getElementById('admin-new-group-key');
@@ -12358,15 +12458,7 @@ END $$;`;
       try {
         localStorage.setItem('RENOBOOK_CUSTOM_GROUPS', JSON.stringify(CATEGORY_GROUP_LABELS));
         localStorage.setItem('RENOBOOK_CUSTOM_CAT_MAP', JSON.stringify(CATEGORY_MAP));
-        if (supabaseClient) {
-          const grpStr = '__CUSTOM_CAT_GROUPS__:' + JSON.stringify(CATEGORY_GROUP_LABELS);
-          const { data: exGrp } = await supabaseClient.from('catalog_items').select('id').like('description', '__CUSTOM_CAT_GROUPS__:%').limit(1);
-          if (exGrp && exGrp[0] && exGrp[0].id) {
-            await supabaseClient.from('catalog_items').update({ description: grpStr }).eq('id', exGrp[0].id);
-          } else {
-            await supabaseClient.from('catalog_items').insert([{ description: grpStr, default_amount: 0 }]);
-          }
-        }
+        scheduleCloudMetaBundleSync();
       } catch (e) {}
       if (keyInput) keyInput.value = '';
       if (labelInput) labelInput.value = '';
@@ -12393,8 +12485,9 @@ END $$;`;
         return;
       }
       setCloudButtonStatus(btn, 'saving', `⏳ 正在輸入細項「${subName}」至雲端...`);
+      removeIdFromDeletedBlacklist('cat_name_' + subName);
       CATEGORY_MAP[groupKey].push(subName);
-      const nextId = Math.max(38, ...Object.values(CATEGORY_ID_BY_NAME)) + 1;
+      const nextId = Math.max(54, ...Object.values(CATEGORY_ID_BY_NAME).map(n => Number(n) || 0)) + 1;
       CATEGORY_ID_BY_NAME[subName] = nextId;
       try {
         localStorage.setItem('RENOBOOK_CUSTOM_CAT_MAP', JSON.stringify(CATEGORY_MAP));
@@ -12411,12 +12504,14 @@ END $$;`;
             display_order: nextId
           }], { onConflict: 'id' });
         } catch (e) {}
+        scheduleCloudMetaBundleSync();
       }
       if (nameInput) nameInput.value = '';
       syncCategoryGroupSelectors();
       renderAdminCategoriesOverview();
+      renderProjectDetail();
       setCloudButtonStatus(btn, 'success', `✅ 細項輸入完成 (${subName})！`, 2400);
-      showToast(`✅ 已新增標準支出細項「${subName}」！`);
+      showToast(`✅ 已新增標準支出細項「${subName}」並同步雲端！`);
     }
 
     async function removeCustomSubcategory(groupKey, subName) {
@@ -12427,8 +12522,10 @@ END $$;`;
       if (supabaseClient && subName) {
         try { await supabaseClient.from('categories').delete().eq('category_name', subName); } catch (e) {}
       }
+      scheduleCloudMetaBundleSync();
       syncCategoryGroupSelectors();
       renderAdminCategoriesOverview();
+      renderProjectDetail();
       showToast(`🗑️ 已從本機及雲端移除細項「${subName}」`);
     }
 
@@ -12548,9 +12645,15 @@ END $$;`;
       } catch (e) {}
       if (typeof supabaseClient !== 'undefined' && supabaseClient) {
         try {
+          let voMapObj = {};
+          try { voMapObj = JSON.parse(localStorage.getItem('RENOBOOK_VO_MAP') || '{}'); } catch (ve) {}
           const payloadStr = '__PINNED_WORKERS__:' + JSON.stringify({
             pinned: pinnedQuickWorkersList,
-            avatars: workerCustomAvatarMap
+            avatars: workerCustomAvatarMap,
+            customCatMap: CATEGORY_MAP,
+            customGroups: CATEGORY_GROUP_LABELS,
+            voMap: voMapObj,
+            deletedIds: getDeletedIdsBlacklist().slice(-500)
           });
           const { data: existing } = await supabaseClient.from('catalog_items').select('id').like('description', '__PINNED_WORKERS__:%').limit(1);
           if (existing && existing.length > 0) {
@@ -14213,7 +14316,8 @@ END $$;`;
 
     async function purgeLegacySeedInvoices() {
       try {
-        LEGACY_SEED_INVOICE_IDS.forEach(id => addIdToDeletedBlacklist(id));
+        const curBl = getDeletedIdsBlacklist();
+        LEGACY_SEED_INVOICE_IDS.forEach(id => { if (!curBl.includes(String(id))) addIdToDeletedBlacklist(id); });
         const savedLocal = JSON.parse(localStorage.getItem('LOCAL_INVOICES') || '[]');
         if (Array.isArray(savedLocal)) {
           const cleaned = savedLocal.filter(i => !isLegacySeedInvoice(i));
@@ -14256,14 +14360,14 @@ END $$;`;
 
       if (projSel) {
         const prev = projSel.value;
-        projSel.innerHTML = '<option value="COMPANY_OVERHEAD">🏢 COMPANY_OVERHEAD - 公司日常營運開支 (項目 4–21)</option>' +
-          sortedProjs.map(p => `<option value="${escapeHtml(p.code)}">${escapeHtml(p.code)} - ${escapeHtml(p.name)}</option>`).join('');
+        projSel.innerHTML = '<option value="COMPANY_OVERHEAD">🏢 公司日常營運開支 (項目 4–21)</option>' +
+          sortedProjs.map(p => `<option value="${escapeHtml(p.code)}">${escapeHtml(p.name || p.code)}</option>`).join('');
         if (prev === 'COMPANY_OVERHEAD' || (prev && sortedProjs.some(p => p.code === prev))) projSel.value = prev;
       }
       if (filterProjSel) {
         const prevF = filterProjSel.value || 'ALL';
-        filterProjSel.innerHTML = '<option value="ALL">🏗️ 全部工程及公司項目</option><option value="COMPANY_OVERHEAD">🏢 COMPANY_OVERHEAD - 公司日常營運開支 (項目 4–21)</option>' +
-          sortedProjs.map(p => `<option value="${escapeHtml(p.code)}">${escapeHtml(p.code)} - ${escapeHtml(p.name)}</option>`).join('');
+        filterProjSel.innerHTML = '<option value="ALL">🏗️ 全部工程及公司項目</option><option value="COMPANY_OVERHEAD">🏢 公司日常營運開支 (項目 4–21)</option>' +
+          sortedProjs.map(p => `<option value="${escapeHtml(p.code)}">${escapeHtml(p.name || p.code)}</option>`).join('');
         if (prevF === 'ALL' || prevF === 'COMPANY_OVERHEAD' || sortedProjs.some(p => p.code === prevF)) filterProjSel.value = prevF;
       }
       const allCats = [];
@@ -16114,7 +16218,7 @@ END $$;`;
       const projSel = document.getElementById('scm-project-code');
       if (projSel) {
         projSel.innerHTML = (projects || []).map(p =>
-          `<option value="${escapeHtml(p.code)}">${escapeHtml(p.code)} · ${escapeHtml(p.name)}</option>`
+          `<option value="${escapeHtml(p.code)}">${escapeHtml(p.name || p.code)}</option>`
         ).join('');
         if (selectedProjectCode && (projects || []).some(p => p.code === selectedProjectCode)) {
           projSel.value = selectedProjectCode;
@@ -16127,13 +16231,13 @@ END $$;`;
         const mainCats = (CATEGORY_MAP && CATEGORY_MAP.main) ? CATEGORY_MAP.main : [];
         const auxCats = (CATEGORY_MAP && CATEGORY_MAP.aux) ? CATEGORY_MAP.aux : [];
         catSel.innerHTML =
-          `<optgroup label="🛠️ 外判人工工料 (18大項)">` +
+          `<optgroup label="🛠️ 外判人工工料 (${subconCats.length}大項)">` +
           subconCats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('') +
           `</optgroup>` +
-          `<optgroup label="🧱 代購主材 (7大項)">` +
+          `<optgroup label="🧱 代購主材 (${mainCats.length}大項)">` +
           mainCats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('') +
           `</optgroup>` +
-          `<optgroup label="🧰 自購輔料 (9大項)">` +
+          `<optgroup label="🧰 自購輔料 (${auxCats.length}大項)">` +
           auxCats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('') +
           `</optgroup>`;
         if (selectedCategory) {
