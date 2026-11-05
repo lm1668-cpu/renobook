@@ -5725,6 +5725,93 @@ END $$;`;
       }
     }
 
+    function updateNetworkBadgeState(isOnline, pendingCount = 0) {
+      const badge = document.getElementById('db-status-badge');
+      if (!badge) return;
+      if (!isOnline) {
+        badge.textContent = pendingCount > 0 ? `🟠 離線暫存 (${pendingCount}筆待傳)` : '🟠 離線暫存模式';
+        badge.className = 'text-[10px] sm:text-[11px] bg-amber-500/25 text-amber-300 border border-amber-400/40 px-2 py-0.5 rounded-full font-bold whitespace-nowrap shrink-0';
+      } else if (pendingCount > 0) {
+        badge.textContent = `🔄 正在補傳 (${pendingCount}筆)...`;
+        badge.className = 'text-[10px] sm:text-[11px] bg-sky-500/25 text-sky-300 border border-sky-400/40 px-2 py-0.5 rounded-full font-bold whitespace-nowrap shrink-0';
+      } else {
+        badge.textContent = '🟢 雲端同步';
+        badge.className = 'text-[10px] sm:text-[11px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-medium whitespace-nowrap shrink-0';
+      }
+    }
+
+    function getOfflineSyncQueue() {
+      try { return JSON.parse(localStorage.getItem('RENOBOOK_OFFLINE_QUEUE') || '[]'); } catch (e) { return []; }
+    }
+
+    function enqueueOfflineRecord(tableName, payload, meta = {}) {
+      try {
+        const q = getOfflineSyncQueue();
+        q.push({ qid: 'oq_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6), tableName, payload, meta, ts: Date.now() });
+        localStorage.setItem('RENOBOOK_OFFLINE_QUEUE', JSON.stringify(q));
+        updateNetworkBadgeState(navigator.onLine !== false, q.length);
+      } catch (e) {}
+    }
+
+    let _isFlushingOfflineQueue = false;
+    async function flushOfflineQueueToCloud() {
+      if (_isFlushingOfflineQueue || !supabaseClient || navigator.onLine === false) return 0;
+      const q = getOfflineSyncQueue();
+      if (!Array.isArray(q) || q.length === 0) {
+        updateNetworkBadgeState(true, 0);
+        return 0;
+      }
+      _isFlushingOfflineQueue = true;
+      updateNetworkBadgeState(true, q.length);
+      const remaining = [];
+      let syncedCount = 0;
+      try {
+        for (const item of q) {
+          try {
+            let { error } = await supabaseClient.from(item.tableName).insert([item.payload]);
+            if (error && item.payload && item.payload.receipt_image_url) {
+              const fb = { ...item.payload };
+              delete fb.receipt_image_url;
+              const retry = await supabaseClient.from(item.tableName).insert([fb]);
+              error = retry.error;
+            }
+            if (!error) {
+              syncedCount++;
+            } else {
+              remaining.push(item);
+            }
+          } catch (netErr) {
+            remaining.push(item);
+          }
+        }
+        localStorage.setItem('RENOBOOK_OFFLINE_QUEUE', JSON.stringify(remaining));
+        updateNetworkBadgeState(navigator.onLine !== false, remaining.length);
+        if (syncedCount > 0) {
+          showToast(`🎉 網絡已恢復，已自動將 ${syncedCount} 筆離線暫存紀錄補傳至雲端資料庫！`);
+          await loadAllData(true);
+        }
+      } catch (e) {}
+      _isFlushingOfflineQueue = false;
+      return syncedCount;
+    }
+
+    window.addEventListener('offline', () => {
+      const q = getOfflineSyncQueue();
+      updateNetworkBadgeState(false, q.length);
+      showToast('🟠 偵測到網絡中斷：你輸入嘅單據或帳目會自動安全暫存於本機，恢復網絡後自動補傳雲端！');
+    });
+
+    window.addEventListener('online', async () => {
+      const q = getOfflineSyncQueue();
+      updateNetworkBadgeState(true, q.length);
+      showToast('🟢 網絡已重新連接，正在同步雲端最新數據...');
+      setupRealtimeSubscription();
+      await flushOfflineQueueToCloud();
+      await loadAllData(true);
+      if (masterLedgerLoaded && !isMasterLedgerLoading) loadMasterLedgerFromCloud(false);
+    });
+
+    let _rtReconnectTimer = null;
     function setupRealtimeSubscription() {
       if (!supabaseClient) return;
       try {
@@ -5739,8 +5826,19 @@ END $$;`;
           .on('postgres_changes', { event: '*', schema: 'public', table: 'labor_days' }, () => { handleRemoteChangeDetected('師傅工數'); })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'companies' }, () => { handleRemoteChangeDetected('開單公司'); })
           .on('postgres_changes', { event: '*', schema: 'public', table: 'clients' }, () => { handleRemoteChangeDetected('客戶資料'); })
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'catalog_items' }, () => { handleRemoteChangeDetected('收費項目'); })
-          .subscribe();
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'catalog_items' }, () => { handleRemoteChangeDetected('雲端設定/收費項目'); })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'categories' }, () => { handleRemoteChangeDetected('支出分類'); })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'workers' }, () => { handleRemoteChangeDetected('師傅名冊與日薪'); })
+          .subscribe((status) => {
+            if (status === 'SUBSCRIBED') {
+              updateNetworkBadgeState(navigator.onLine !== false, getOfflineSyncQueue().length);
+            } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+              if (_rtReconnectTimer) clearTimeout(_rtReconnectTimer);
+              _rtReconnectTimer = setTimeout(() => {
+                if (navigator.onLine !== false && supabaseClient) setupRealtimeSubscription();
+              }, 5000);
+            }
+          });
       } catch (e) {}
     }
 
@@ -6474,7 +6572,10 @@ END $$;`;
       const ovSum = (companyOverheadExpensesCache || []).reduce((acc, r) => acc + Number(r.amount || 0), 0);
       const mlCnt = `${(masterLedgerCache.expenses || []).length}:${(masterLedgerCache.incomes || []).length}:${(masterLedgerCache.labor || []).length}`;
       const qoStr = (quoteOnlyProjectCodes || []).slice().sort().join(',');
-      return `${iStr}#${cStr}#${clStr}#${itStr}#${projects.length}:${pSum}#${expStr}#${incStr}#${(companyOverheadExpensesCache || []).length}:${ovSum}#${mlCnt}#${qoStr}`;
+      const catCnt = Object.values(CATEGORY_MAP || {}).reduce((s, a) => s + (a ? a.length : 0), 0);
+      const subconCnt = (subconContractsData || []).length;
+      const wStr = (workerRegistryData || []).slice(0, 30).map(w => `${w.name}:${w.wage}`).join('|');
+      return `${iStr}#${cStr}#${clStr}#${itStr}#${projects.length}:${pSum}#${expStr}#${incStr}#${(companyOverheadExpensesCache || []).length}:${ovSum}#${mlCnt}#${qoStr}#${catCnt}#${subconCnt}#${wStr}`;
     }
 
     function openDbModal() { document.getElementById('db-modal').classList.remove('hidden'); document.getElementById('db-modal').classList.add('flex'); }
@@ -6487,13 +6588,17 @@ END $$;`;
     }
 
     async function loadAllData(isSilentBackground = false) {
+      if (navigator.onLine !== false && getOfflineSyncQueue().length > 0) {
+        await flushOfflineQueueToCloud();
+      }
       await healNov2026DateTypoRecords();
       const blacklist = getDeletedIdsBlacklist();
       let cloudConnected = false;
 
       if (supabaseClient) {
         try {
-          const skipStaticInBg = Boolean(isSilentBackground && companiesData.length > 0 && categoriesDict.length > 0);
+          // 跨裝置與多機同步：每次背景同步均拉取最新設定、分類及師傅表，確保 A 機改動 B 機即時見到
+          const skipStaticInBg = false;
           const [compRes, cliRes, itemRes, invRes, pnlRes, expRes, incRes, catRes, labRes, overheadExpRows] = await Promise.all([
             skipStaticInBg ? Promise.resolve({ data: null, error: null }) : supabaseClient.from('companies').select('*').order('created_at', { ascending: false }),
             skipStaticInBg ? Promise.resolve({ data: null, error: null }) : supabaseClient.from('clients').select('*').order('created_at', { ascending: false }),
@@ -6805,6 +6910,30 @@ END $$;`;
                 }
               } catch (pwe) {}
             }
+            const voMapRow = itemRes.data.find(i => String(i.description || '').startsWith('__VO_ITEMS_MAP__:'));
+            if (voMapRow && voMapRow.description) {
+              try {
+                const cloudVoMap = JSON.parse(voMapRow.description.slice('__VO_ITEMS_MAP__:'.length));
+                if (cloudVoMap && typeof cloudVoMap === 'object') {
+                  const localVoMap = JSON.parse(localStorage.getItem('RENOBOOK_VO_MAP') || '{}');
+                  const mergedVoMap = { ...cloudVoMap, ...localVoMap };
+                  Object.entries(cloudVoMap).forEach(([k, v]) => {
+                    if (Array.isArray(v) && v.length > 0) mergedVoMap[k] = v;
+                  });
+                  localStorage.setItem('RENOBOOK_VO_MAP', JSON.stringify(mergedVoMap));
+                }
+              } catch (ve) {}
+            }
+            const customGrpRow = itemRes.data.find(i => String(i.description || '').startsWith('__CUSTOM_CAT_GROUPS__:'));
+            if (customGrpRow && customGrpRow.description) {
+              try {
+                const cloudGrps = JSON.parse(customGrpRow.description.slice('__CUSTOM_CAT_GROUPS__:'.length));
+                if (cloudGrps && typeof cloudGrps === 'object') {
+                  CATEGORY_GROUP_LABELS = { ...CATEGORY_GROUP_LABELS, ...cloudGrps };
+                  localStorage.setItem('RENOBOOK_CUSTOM_GROUPS', JSON.stringify(CATEGORY_GROUP_LABELS));
+                }
+              } catch (ge) {}
+            }
             const quoteOnlyRow = itemRes.data.find(i => String(i.description || '').startsWith('__QUOTE_ONLY_PROJECTS__:'));
             const isLocalDirty = localStorage.getItem('RENOBOOK_QUOTE_ONLY_DIRTY') === '1';
             if (quoteOnlyRow && quoteOnlyRow.description) {
@@ -6840,7 +6969,8 @@ END $$;`;
               !String(i.description || '').startsWith('__PINNED_WORKERS__:') &&
               !String(i.description || '').startsWith('__PIN_BANNER__:') &&
               !String(i.description || '').startsWith('__APP_PIN_DIGEST__:') &&
-              !String(i.description || '').startsWith('__QUOTE_ONLY_PROJECTS__:') &&
+              !String(i.description || '').startsWith('__VO_ITEMS_MAP__:') &&
+              !String(i.description || '').startsWith('__CUSTOM_CAT_GROUPS__:') &&
               !String(i.description || '').startsWith('__QUOTE_ONLY_PROJECTS__:')
             );
             try { localStorage.setItem('LOCAL_ITEMS', JSON.stringify(catalogItemsData)); } catch (e) {}
@@ -6881,6 +7011,7 @@ END $$;`;
       }
       try { ensureCommonClientsSeeded(); } catch (e) { console.warn('ensureCommonClientsSeeded error:', e); }
       try { await purgeLegacySeedInvoices(); } catch (e) { console.warn('purgeLegacySeedInvoices error:', e); }
+      try { if (typeof syncCloudWorkersTable === 'function') await syncCloudWorkersTable(); } catch (e) {}
       try { applyRebateSeparationAndProfitModeToAllProjects(); } catch (e) {}
 
       const newFingerprint = computeDataFingerprint(invoicesHistoryData, companiesData, clientsData, catalogItemsData);
@@ -8115,21 +8246,30 @@ END $$;`;
         };
 
         let insertedExp = null;
-        if (supabaseClient) {
-          let { data, error } = await supabaseClient.from('expenses').insert([expPayload]).select();
-          if (error && currentQuickPhotoBase64) {
-            const fallbackPayload = { ...expPayload };
-            delete fallbackPayload.receipt_image_url;
-            const retryRes = await supabaseClient.from('expenses').insert([fallbackPayload]).select();
-            data = retryRes.data;
-            error = retryRes.error;
+        let queuedOfflineExp = false;
+        if (supabaseClient && navigator.onLine !== false) {
+          try {
+            let { data, error } = await supabaseClient.from('expenses').insert([expPayload]).select();
+            if (error && currentQuickPhotoBase64) {
+              const fallbackPayload = { ...expPayload };
+              delete fallbackPayload.receipt_image_url;
+              const retryRes = await supabaseClient.from('expenses').insert([fallbackPayload]).select();
+              data = retryRes.data;
+              error = retryRes.error;
+            }
+            if (error) {
+              enqueueOfflineRecord('expenses', expPayload, { pCode, amt, cat });
+              queuedOfflineExp = true;
+            } else if (data && data[0]) {
+              insertedExp = data[0];
+            }
+          } catch (netErr) {
+            enqueueOfflineRecord('expenses', expPayload, { pCode, amt, cat });
+            queuedOfflineExp = true;
           }
-          if (error) {
-            setCloudButtonStatus(qfBtn, 'error', '❌ 寫入雲端開支表失敗');
-            showToast('❌ 寫入雲端開支表失敗：' + error.message);
-            return;
-          }
-          if (data && data[0]) insertedExp = data[0];
+        } else {
+          enqueueOfflineRecord('expenses', expPayload, { pCode, amt, cat });
+          queuedOfflineExp = true;
         }
 
         const newExpRow = insertedExp || { id: Date.now(), ...expPayload };
@@ -8180,7 +8320,9 @@ END $$;`;
           ts: Date.now()
         };
 
-        showToast(`✅ 已寫入雲端開支表 (#${normalizedExp.id})：${pShortName} [${cat}] HK$ ${amt.toLocaleString()}`);
+        showToast(queuedOfflineExp
+          ? `🟠 網絡中斷：開支已安全暫存於本機佇列 (${pShortName} HK$ ${amt.toLocaleString()})，恢復網絡後自動補傳雲端！`
+          : `✅ 已寫入雲端開支表 (#${normalizedExp.id})：${pShortName} [${cat}] HK$ ${amt.toLocaleString()}`);
       } else if (savedEntryType === 'income') {
         const payer = document.getElementById('qf-payer').value.trim();
         const nextSeqStr = String(getNextIncomeSeqNumber());
@@ -8204,20 +8346,43 @@ END $$;`;
         };
 
         let insertedRow = null;
-        if (supabaseClient) {
-          const tryPayload = currentQuickPhotoBase64 ? { ...incPayload, receipt_image_url: currentQuickPhotoBase64 } : incPayload;
-          let { data, error } = await supabaseClient.from('incomes').insert([tryPayload]).select();
-          if (error && currentQuickPhotoBase64) {
-            const retryRes = await supabaseClient.from('incomes').insert([incPayload]).select();
-            data = retryRes.data;
-            error = retryRes.error;
+        let queuedOfflineInc = false;
+        if (supabaseClient && navigator.onLine !== false) {
+          try {
+            // 多機同用防撞單號：寫入前即時檢查雲端最新 seq_no，若已被另一部機使用則自動順延 +1
+            if (/^\d+$/.test(incPayload.seq_no || '')) {
+              const { data: topInc } = await supabaseClient.from('incomes').select('seq_no').order('id', { ascending: false }).limit(5);
+              if (Array.isArray(topInc) && topInc.length > 0) {
+                let cloudMaxSeq = 0;
+                topInc.forEach(r => { const n = parseInt(r.seq_no, 10); if (!isNaN(n) && n > cloudMaxSeq) cloudMaxSeq = n; });
+                if (cloudMaxSeq >= parseInt(incPayload.seq_no, 10)) {
+                  const bumpedSeq = String(cloudMaxSeq + 1);
+                  incPayload.seq_no = bumpedSeq;
+                  incPayload.invoice_no = bumpedSeq;
+                  if (method === 'cheque') incPayload.cheque_no = bumpedSeq;
+                }
+              }
+            }
+            const tryPayload = currentQuickPhotoBase64 ? { ...incPayload, receipt_image_url: currentQuickPhotoBase64 } : incPayload;
+            let { data, error } = await supabaseClient.from('incomes').insert([tryPayload]).select();
+            if (error && currentQuickPhotoBase64) {
+              const retryRes = await supabaseClient.from('incomes').insert([incPayload]).select();
+              data = retryRes.data;
+              error = retryRes.error;
+            }
+            if (error) {
+              enqueueOfflineRecord('incomes', incPayload, { pCode, amt });
+              queuedOfflineInc = true;
+            } else if (data && data[0]) {
+              insertedRow = data[0];
+            }
+          } catch (netErr) {
+            enqueueOfflineRecord('incomes', incPayload, { pCode, amt });
+            queuedOfflineInc = true;
           }
-          if (error) {
-            setCloudButtonStatus(qfBtn, 'error', '❌ 寫入雲端收入表失敗');
-            showToast('❌ 寫入雲端收入表失敗：' + error.message);
-            return;
-          }
-          if (data && data[0]) insertedRow = data[0];
+        } else {
+          enqueueOfflineRecord('incomes', incPayload, { pCode, amt });
+          queuedOfflineInc = true;
         }
         const newLocalInc = insertedRow || { id: Number(nextSeqStr) || Date.now(), ...incPayload };
         if (currentQuickPhotoBase64) {
@@ -8268,7 +8433,9 @@ END $$;`;
           ts: Date.now()
         };
 
-        showToast(`✅ 已寫入雲端收入表 (單號 #${incReceipt})：${pShortName} HK$ ${amt.toLocaleString()}`);
+        showToast(queuedOfflineInc
+          ? `🟠 網絡中斷：收款已安全暫存於本機佇列 (${pShortName} HK$ ${amt.toLocaleString()})，恢復網絡後自動補傳雲端！`
+          : `✅ 已寫入雲端收入表 (單號 #${incPayload.seq_no || incReceipt})：${pShortName} HK$ ${amt.toLocaleString()}`);
       } else if (savedEntryType === 'labor') {
         const workerName = (document.getElementById('qf-worker-name')?.value.trim() || document.getElementById('qf-worker-select')?.value.trim() || '');
         const workLoc = document.getElementById('qf-work-location')?.value.trim() || '';
@@ -8287,14 +8454,23 @@ END $$;`;
           remarks: remark || null
         };
         let insertedLab = null;
-        if (supabaseClient) {
-          const { data, error } = await supabaseClient.from('labor_days').insert([labPayload]).select();
-          if (error) {
-            setCloudButtonStatus(qfBtn, 'error', '❌ 寫入雲端人工表失敗');
-            showToast('❌ 寫入雲端人工表失敗：' + error.message);
-            return;
+        let queuedOfflineLab = false;
+        if (supabaseClient && navigator.onLine !== false) {
+          try {
+            const { data, error } = await supabaseClient.from('labor_days').insert([labPayload]).select();
+            if (error) {
+              enqueueOfflineRecord('labor_days', labPayload, { pCode, workerName, amt });
+              queuedOfflineLab = true;
+            } else if (data && data[0]) {
+              insertedLab = data[0];
+            }
+          } catch (netErr) {
+            enqueueOfflineRecord('labor_days', labPayload, { pCode, workerName, amt });
+            queuedOfflineLab = true;
           }
-          if (data && data[0]) insertedLab = data[0];
+        } else {
+          enqueueOfflineRecord('labor_days', labPayload, { pCode, workerName, amt });
+          queuedOfflineLab = true;
         }
         const newLabRow = insertedLab || { id: Date.now(), ...labPayload };
         if (!Array.isArray(masterLedgerCache.labor)) masterLedgerCache.labor = [];
@@ -8367,7 +8543,9 @@ END $$;`;
           ts: Date.now()
         };
 
-        showToast(`✅ 已寫入雲端人工表 (#${newLabRow.id})：${workerName} 於 ${pShortName} 開工 ${amt} 日！`);
+        showToast(queuedOfflineLab
+          ? `🟠 網絡中斷：${workerName} 日工 (${amt} 日) 已安全暫存於本機佇列，恢復網絡後自動補傳雲端！`
+          : `✅ 已寫入雲端人工表 (#${newLabRow.id})：${workerName} 於 ${pShortName} 開工 ${amt} 日！`);
       }
 
       incrementUserAddedRecordCount(1);
@@ -11066,12 +11244,21 @@ END $$;`;
       ];
     }
 
-    function saveProjectVoItems(projectCode, voItems) {
+    async function saveProjectVoItems(projectCode, voItems) {
       if (!projectCode) return;
       try {
         const map = JSON.parse(localStorage.getItem('RENOBOOK_VO_MAP') || '{}');
         map[projectCode] = voItems;
         localStorage.setItem('RENOBOOK_VO_MAP', JSON.stringify(map));
+        if (supabaseClient) {
+          const payloadStr = '__VO_ITEMS_MAP__:' + JSON.stringify(map);
+          const { data: existing } = await supabaseClient.from('catalog_items').select('id').like('description', '__VO_ITEMS_MAP__:%').limit(1);
+          if (existing && existing[0] && existing[0].id) {
+            await supabaseClient.from('catalog_items').update({ description: payloadStr }).eq('id', existing[0].id);
+          } else {
+            await supabaseClient.from('catalog_items').insert([{ description: payloadStr, default_amount: 0 }]);
+          }
+        }
       } catch (e) {}
     }
 
@@ -12076,6 +12263,15 @@ END $$;`;
       try {
         localStorage.setItem('RENOBOOK_CUSTOM_GROUPS', JSON.stringify(CATEGORY_GROUP_LABELS));
         localStorage.setItem('RENOBOOK_CUSTOM_CAT_MAP', JSON.stringify(CATEGORY_MAP));
+        if (supabaseClient) {
+          const grpStr = '__CUSTOM_CAT_GROUPS__:' + JSON.stringify(CATEGORY_GROUP_LABELS);
+          const { data: exGrp } = await supabaseClient.from('catalog_items').select('id').like('description', '__CUSTOM_CAT_GROUPS__:%').limit(1);
+          if (exGrp && exGrp[0] && exGrp[0].id) {
+            await supabaseClient.from('catalog_items').update({ description: grpStr }).eq('id', exGrp[0].id);
+          } else {
+            await supabaseClient.from('catalog_items').insert([{ description: grpStr, default_amount: 0 }]);
+          }
+        }
       } catch (e) {}
       if (keyInput) keyInput.value = '';
       if (labelInput) labelInput.value = '';
@@ -12734,9 +12930,9 @@ END $$;`;
             const existing = workerRegistryData.find(w => (w.name || '').trim() === cName);
             if (existing) {
               if (cWage > 0 && existing.wage !== cWage) { existing.wage = cWage; changed = true; }
-              if (row.phone && !existing.phone) { existing.phone = row.phone; changed = true; }
-              if (row.bank_name && (!existing.bank_name || existing.bank_name === '待補登記')) { existing.bank_name = row.bank_name; changed = true; }
-              if (row.bank_account && (!existing.bank_acc || existing.bank_acc === '-')) { existing.bank_acc = row.bank_account; changed = true; }
+              if (row.phone && existing.phone !== row.phone) { existing.phone = row.phone; changed = true; }
+              if (row.bank_name && row.bank_name !== '待補登記' && existing.bank_name !== row.bank_name) { existing.bank_name = row.bank_name; changed = true; }
+              if (row.bank_account && row.bank_account !== '-' && existing.bank_acc !== row.bank_account) { existing.bank_acc = row.bank_account; changed = true; }
             } else {
               workerRegistryData.push({
                 id: 'w_db_' + row.id,
@@ -13247,14 +13443,20 @@ END $$;`;
     function handlePayrollReceiptSelected(e) {
       const file = e.target.files[0];
       if (!file || !currentPayrollUploadKey) return;
-      compressReceiptPhotoExtreme(file, (b64, compKB) => {
+      compressReceiptPhotoExtreme(file, async (b64, compKB) => {
         try {
           const map = getPayrollReceiptsMap();
           map[currentPayrollUploadKey] = b64;
           localStorage.setItem('RENOBOOK_PAYROLL_RECEIPTS', JSON.stringify(map));
+          const parts = String(currentPayrollUploadKey || '').split('_');
+          if (parts.length >= 3 && supabaseClient) {
+            const sDate = parts[0], eDate = parts[1], wName = parts.slice(2).join('_');
+            const remPrefix = `[半月出糧 ${sDate}至${eDate}]`;
+            await supabaseClient.from('expenses').update({ receipt_image_url: b64 }).eq('payee', wName).like('remarks', `${remPrefix}%`);
+          }
         } catch (err) {}
         renderSemiMonthlyPayroll();
-        showToast(`📸 已補交出糧單據相片 (${compKB}KB)！`);
+        showToast(`📸 已補交出糧單據相片並同步至雲端 (${compKB}KB)！`);
       });
     }
 
@@ -13361,17 +13563,17 @@ END $$;`;
         grandTotal += totalPay;
 
         const periodKey = `${startDate}_${endDate}_${w.name}`;
-        const receiptB64 = receiptsMap[periodKey] || '';
-        const postedEntry = postedMap[periodKey];
-        const isPosted = Boolean(postedEntry);
-        const isJustUpdatedWorker = Boolean(lastEntry && lastEntry.type === 'labor' && (w.name || '').trim() === (lastEntry.worker_name || '').trim());
-        // 檢查是否入賬後又有新增/修改過工數或人工金額（同時比對開支表實際已拆帳金額）
         const remarkPrefixCheck = `[半月出糧 ${startDate}至${endDate}]`;
         const expPoolForCheck = (masterLedgerCache.expenses && masterLedgerCache.expenses.length > 0) ? masterLedgerCache.expenses : (recentExpenses || []);
         const actualPostedExps = expPoolForCheck.filter(e =>
           e && String(e.payee || '').trim() === w.name && String(e.remarks || e.remark || '').includes(remarkPrefixCheck)
         );
         const actualPostedSum = actualPostedExps.reduce((s, e) => s + Number(e.amount || 0), 0);
+        const cloudReceiptB64 = (actualPostedExps.find(e => e && e.receipt_image_url) || {}).receipt_image_url || '';
+        const receiptB64 = receiptsMap[periodKey] || cloudReceiptB64 || '';
+        const postedEntry = postedMap[periodKey];
+        const isPosted = Boolean(postedEntry) || actualPostedExps.length > 0;
+        const isJustUpdatedWorker = Boolean(lastEntry && lastEntry.type === 'labor' && (w.name || '').trim() === (lastEntry.worker_name || '').trim());
         const hasDiffSincePosted = isPosted && (
           isJustUpdatedWorker ||
           (typeof postedEntry === 'object' && postedEntry !== null && (
@@ -13758,9 +13960,7 @@ END $$;`;
 
       // 若當中有師傅之前已入過開支表，先從雲端清除該師傅本期舊嘅拆帳開支，防止重複入賬
       for (const r of rowsToPost) {
-        if (r.isPosted || isFullRepost) {
-          await removeWorkerPeriodPayrollExpenses(r.startDate, r.endDate, r.worker.name, postedMap[r.periodKey]);
-        }
+        await removeWorkerPeriodPayrollExpenses(r.startDate, r.endDate, r.worker.name, postedMap[r.periodKey]);
       }
 
       const expenseBatch = [];
