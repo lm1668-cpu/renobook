@@ -2579,7 +2579,7 @@
             <h2 class="font-extrabold text-slate-800 text-base">🗂️ 4. 工程費用大類及標準支出細項管理（自訂擴充類別）</h2>
             <p class="text-xs text-slate-500">自由新增「費用大類」或「標準支出細項」，儲存後會即時同步至「快速開支/入賬」、「項目帳目」與「開支總表」</p>
           </div>
-          <span class="text-xs bg-amber-100 text-amber-900 font-extrabold px-3 py-1 rounded-full" id="admin-cat-count-badge">共 34 項標準細類</span>
+          <span class="text-xs bg-amber-100 text-amber-900 font-extrabold px-3 py-1 rounded-full" id="admin-cat-count-badge">共 4 大類 · 53 項標準細類</span>
         </div>
 
         <!-- 4A: 新增費用大類 -->
@@ -2967,8 +2967,8 @@
             <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-900 text-[11px] font-extrabold">
               <i class="fa-solid fa-bolt text-sky-600"></i> 免開網頁 Copy &amp; Paste · 直接連入 Supabase 自動升級
             </div>
-            <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">🗄️ 6. Supabase 雲端資料表一鍵直連升級與數據修復</h2>
-            <p class="text-xs text-slate-600">撳一下「⚡ 一鍵直連升級 Supabase 資料表」，系統會直接透過現有雲端連線自動同步 37 項標準收支類別、補齊全部 647 單工程與 29 位介紹人、同步日薪師傅資料，並自動清洗異常日期與空白行！</p>
+            <h2 class="text-lg sm:text-xl font-extrabold text-slate-900">🗄️ 6. Supabase 雲端資料表一鍵直連升級與數據同步</h2>
+            <p class="text-xs text-slate-600">撳一下「⚡ 一鍵直連升級 Supabase 資料表」，系統會直接透過現有雲端連線自動同步全部 53 項標準工程及公司營運開支分類、對齊工程主表與「只是報價」狀態、同步日薪師傅名冊與判頭合約，並刷新全庫損益視圖！</p>
           </div>
           <div class="grid grid-cols-1 sm:flex sm:flex-wrap items-stretch sm:items-center gap-2 w-full lg:w-auto shrink-0">
             <button type="button" id="btn-one-click-supabase-upgrade" onclick="runOneClickSupabaseUpgrade()" class="w-full sm:w-auto h-[42px] px-4 sm:px-5 bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 hover:from-emerald-600 hover:to-teal-500 text-white rounded-xl text-xs sm:text-sm font-extrabold transition flex items-center justify-center gap-2 shadow-md whitespace-nowrap cursor-pointer">
@@ -2986,23 +2986,23 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div class="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm">
             <span class="text-[10px] font-bold text-emerald-600 uppercase">自動步驟 1</span>
-            <div class="font-bold text-slate-800 text-sm mt-0.5">37 項標準分類同步</div>
-            <p class="text-[11px] text-slate-500 mt-1">自動直連寫入 `categories` 表（輔料9項、主材7項、外判18項及公司項目）。</p>
+            <div class="font-bold text-slate-800 text-sm mt-0.5">53 項標準收支分類同步</div>
+            <p class="text-[11px] text-slate-500 mt-1">自動直連寫入 `categories` 表（輔料 9 項、主材 7 項、外判 18 項及公司固定資產／日常營運 19 項）。</p>
           </div>
           <div class="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm">
             <span class="text-[10px] font-bold text-blue-600 uppercase">自動步驟 2</span>
-            <div class="font-bold text-slate-800 text-sm mt-0.5">647 單工程及介紹人補齊</div>
-            <p class="text-[11px] text-slate-500 mt-1">將全部 647 單工程及 29 位介紹人直連 Upsert 至雲端 `projects` 主表。</p>
+            <div class="font-bold text-slate-800 text-sm mt-0.5">工程主表、介紹人及狀態同步</div>
+            <p class="text-[11px] text-slate-500 mt-1">自動對齊全部工程項目、29 位介紹人及「只是報價 / 施工中 / 已完工」雲端持久化狀態。</p>
           </div>
           <div class="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm">
             <span class="text-[10px] font-bold text-amber-600 uppercase">自動步驟 3</span>
-            <div class="font-bold text-slate-800 text-sm mt-0.5">歷史異常日期與錯位清洗</div>
-            <p class="text-[11px] text-slate-500 mt-1">自動透過 API 修正 2106~2109/7018/3013 年份筆誤、清除空白行與示範單據。</p>
+            <div class="font-bold text-slate-800 text-sm mt-0.5">師傅名冊、頭像及判頭合約同步</div>
+            <p class="text-[11px] text-slate-500 mt-1">自動同步日薪師傅登記資料、常用師傅圓形頭像設定、外判判頭合約及清理空白異常紀錄。</p>
           </div>
           <div class="p-3.5 bg-white rounded-xl border border-slate-200 shadow-sm">
             <span class="text-[10px] font-bold text-indigo-600 uppercase">自動步驟 4</span>
-            <div class="font-bold text-slate-800 text-sm mt-0.5">損益視圖驗證與刷新</div>
-            <p class="text-[11px] text-slate-500 mt-1">自動檢測 `v_project_pnl` 並即時重新載入全庫最新收支與損益數據。</p>
+            <div class="font-bold text-slate-800 text-sm mt-0.5">全庫損益視圖與雲端設定刷新</div>
+            <p class="text-[11px] text-slate-500 mt-1">自動檢測 `v_project_pnl` 損益視圖，並即時重新載入全庫最新收支、日工與跨設備同步設定。</p>
           </div>
         </div>
 
@@ -4557,14 +4557,14 @@ END $$;</code></pre>
       '公司-辦公室裝修': 38, '公司-工具設備': 39, '公司-車輛購置': 40, '公司-電腦設備': 41,
       '公司-人員工資及強積金': 42, '公司-設計師佣金': 43, '公司-工程保險': 44, '公司-售後服務及保養': 45,
       '公司-宣傳廣告費用': 46, '公司-租金及管理費': 47, '公司-水電電話網絡費': 48, '公司-辦公及軟件費': 49,
-      '公司-車輛費用(油費/泊車/牌費)': 50, '公司-差旅及人事補貼': 51, '公司-招待費用': 52, '公司-備用零錢': 53
+      '公司-車輛費用': 50, '公司-車輛費用(油費/泊車/牌費)': 50, '公司-差旅及人事補貼': 51, '公司-招待費用': 52, '公司-備用零錢': 53
     };
     const CATEGORY_MAP = {
       'aux': ['輔料-保護', '輔料-油漆', '輔料-泥水', '輔料-木器', '輔料-廚櫃', '輔料-水喉', '輔料-電路', '輔料-五金', '輔料-其他'],
       'main': ['主材-地板', '主材-瓷磚', '主材-潔具', '主材-燈飾', '主材-油漆牆紙', '主材-電器', '主材-鐵器'],
       'subcon': ['外判-運輸工人', '外判-清拆工人', '外判-泥水工人', '外判-電燈工人', '外判-水喉工人', '外判-清潔工人', '外判-鋁窗工人', '外判-棚架工人', '外判-雲石工人', '外判-傢俬工料', '公司-日薪工人', '外判-玻璃間隔', '外判-設計繪圖', '外判-工程承包', '外判-地板打蠟', '外判-間隔天花', '外判-裝修按金', '外判-工程保險'],
       'company': [
-        '公司-水電電話網絡費', '公司-車輛費用(油費/泊車/牌費)', '公司-工具設備', '公司-租金及管理費',
+        '公司-水電電話網絡費', '公司-車輛費用', '公司-工具設備', '公司-租金及管理費',
         '公司-辦公及軟件費', '公司-電腦設備', '公司-辦公室裝修', '公司-車輛購置',
         '公司-人員工資及強積金', '公司-項目佣金', '公司-設計師佣金', '公司-年終花紅',
         '公司-工程保險', '公司-售後服務及保養', '公司-宣傳廣告費用', '公司-差旅及人事補貼',
@@ -8577,8 +8577,8 @@ END $$;`;
       };
 
       try {
-        // Step 1: Upsert 37 standard categories + custom categories
-        logLine('1/4 正在同步 37+ 項標準工程收支分類 (categories)...', 'text-sky-300');
+        // Step 1: Upsert 53 standard categories + custom categories
+        logLine('1/4 正在同步 53 項標準工程及公司營運收支分類 (categories)...', 'text-sky-300');
         const stdCats = [
           { id: 1, category_group: 'aux', category_name: '輔料-保護', excel_col: 'AA', excel_title: '自購保護輔材料總金額', display_order: 1 },
           { id: 2, category_group: 'aux', category_name: '輔料-油漆', excel_col: 'AB', excel_title: '自購油漆輔材料總金額', display_order: 2 },
@@ -8629,16 +8629,19 @@ END $$;`;
           { id: 47, category_group: 'company', category_name: '公司-租金及管理費', excel_col: 'NONE', excel_title: '15. 租金、管理費及差餉', display_order: 47 },
           { id: 48, category_group: 'company', category_name: '公司-水電電話網絡費', excel_col: 'NONE', excel_title: '16. 水、電、電話、網路等費用', display_order: 48 },
           { id: 49, category_group: 'company', category_name: '公司-辦公及軟件費', excel_col: 'NONE', excel_title: '17. 辦公室用品及軟件費用', display_order: 49 },
-          { id: 50, category_group: 'company', category_name: '公司-車輛費用(油費/泊車/牌費)', excel_col: 'NONE', excel_title: '18. 車輛費用', display_order: 50 },
+          { id: 50, category_group: 'company', category_name: '公司-車輛費用', excel_col: 'NONE', excel_title: '18. 車輛費用', display_order: 50 },
           { id: 51, category_group: 'company', category_name: '公司-差旅及人事補貼', excel_col: 'NONE', excel_title: '19. 差旅、油費及人事補貼費用', display_order: 51 },
           { id: 52, category_group: 'company', category_name: '公司-招待費用', excel_col: 'NONE', excel_title: '20. 招待費用', display_order: 52 },
           { id: 53, category_group: 'company', category_name: '公司-備用零錢', excel_col: 'NONE', excel_title: '21. 備用零錢', display_order: 53 }
         ];
         await supabaseClient.from('categories').upsert(stdCats, { onConflict: 'id' });
-        logLine('   ✅ 已完成 37 項標準分類同步', 'text-emerald-400');
+        try {
+          await supabaseClient.from('expenses').update({ category_name: '公司-車輛費用' }).eq('category_name', '公司-車輛費用(油費/泊車/牌費)');
+        } catch (ve) {}
+        logLine('   ✅ 已完成 53 項標準工程及公司營運收支分類同步', 'text-emerald-400');
 
-        // Step 2: Precision sync of 647 projects & 29 introducers (fixing any double-counted main material rows without overwriting user-edited projects)
-        logLine(`2/4 正在精準同步 ${rawProjects.length} 單工程及修復 39 單主材重複計算項目...`, 'text-sky-300');
+        // Step 2: Sync projects, 29 introducers & quote-only status
+        logLine(`2/4 正在同步全部 ${rawProjects.length} 單工程主表、29 位介紹人及「只是報價」狀態...`, 'text-sky-300');
         const projPayloads = rawProjects.map(p => ({
           project_code: p.code,
           project_name: p.name || p.code,
@@ -8660,10 +8663,13 @@ END $$;`;
         for (let i = 0; i < projPayloads.length; i += 200) {
           await supabaseClient.from('projects').upsert(projPayloads.slice(i, i + 200), { onConflict: 'project_code' });
         }
-        logLine(`   ✅ 已完成 ${projPayloads.length} 單工程精準對齊，結賬合同總金額已還原為正確的 HK$ 206,171,454`, 'text-emerald-400');
+        if (typeof persistQuoteOnlySetToCloud === 'function') {
+          try { await persistQuoteOnlySetToCloud(); } catch (qe) {}
+        }
+        logLine(`   ✅ 已完成 ${projPayloads.length} 單工程主表、29 位介紹人及工程狀態對齊`, 'text-emerald-400');
 
-        // Step 3: Clean up anomalous summary rows, legacy demo invoices, and sync workers
-        logLine('3/4 正在執行雲端資料表清洗（清除誤匯入總計行、空白行及同步師傅名單）...', 'text-sky-300');
+        // Step 3: Sync worker registry, pinned avatars, subcon contracts, and clean up blank rows
+        logLine('3/4 正在同步日薪師傅名冊、常用頭像設定、判頭合約及清理空白異常紀錄...', 'text-sky-300');
         try {
           await supabaseClient.from('incomes').delete().eq('project_code', 'COMPANY_OVERHEAD').gt('amount', 50000000);
           await supabaseClient.from('labor_days').delete().eq('work_days', 0).is('work_date', null);
@@ -8679,10 +8685,13 @@ END $$;`;
           }));
           try { await supabaseClient.from('workers').upsert(wRows, { onConflict: 'name' }); } catch (we) {}
         }
-        logLine('   ✅ 已完成異常數據清洗與師傅名單同步', 'text-emerald-400');
+        if (typeof persistPinnedWorkersToCloud === 'function') {
+          try { await persistPinnedWorkersToCloud(false); } catch (pe) {}
+        }
+        logLine('   ✅ 已完成日薪師傅名冊、常用頭像設定同步與異常數據清理', 'text-emerald-400');
 
         // Step 4: Reload all data & refresh views
-        logLine('4/4 正在重新載入全庫損益視圖與總表數據...', 'text-sky-300');
+        logLine('4/4 正在刷新 v_project_pnl 損益視圖並重新載入全庫最新收支與跨設備設定...', 'text-sky-300');
         await loadAllData(false);
         await loadMasterLedgerFromCloud(false);
         logLine('🎉 一鍵直連升級完成！無需打開網頁 Copy & Paste，所有工程、介紹人及收支記錄已全面就緒！', 'text-amber-300 font-extrabold pt-1');
@@ -11314,7 +11323,7 @@ END $$;`;
           { code: '#15', cat: '公司-租金及管理費', label: '15. 租金、管理費及差餉' },
           { code: '#16', cat: '公司-水電電話網絡費', label: '16. 水、電、電話、網路等費用' },
           { code: '#17', cat: '公司-辦公及軟件費', label: '17. 辦公室用品及軟件費用' },
-          { code: '#18', cat: '公司-車輛費用(油費/泊車/牌費)', label: '18. 車輛費用 (入油/泊車/隧道/維修)' },
+          { code: '#18', cat: '公司-車輛費用', label: '18. 車輛費用' },
           { code: '#19', cat: '公司-差旅及人事補貼', label: '19. 差旅、交通及人事補貼' },
           { code: '#20', cat: '公司-招待費用', label: '20. 招待及膳食費用' },
           { code: '#21', cat: '公司-備用零錢', label: '21. 備用零錢及其他日常開支' }
@@ -11326,8 +11335,9 @@ END $$;`;
       if (!row) return '';
       const curCat = String(row.category_name || row.category || '').trim();
       const isCompanyProj = (row.project_code === 'COMPANY_OVERHEAD');
-      // 若已經係明確嘅 #4-#21 公司細項，直接保留
+      // 若已經係明確嘅 #4-#21 公司細項，直接保留（並將舊版帶括號嘅「公司-車輛費用(...)」統一轉為「公司-車輛費用」）
       if (curCat.startsWith('公司-') && curCat !== '公司-日薪工人') {
+        if (curCat.startsWith('公司-車輛費用')) return '公司-車輛費用';
         return curCat;
       }
       // 只對 COMPANY_OVERHEAD 或「未分類開支」進行智能細項識別
@@ -11342,7 +11352,7 @@ END $$;`;
 
       // #18 車輛費用 (油站、停車場、隧道、汽車維修、電池、輪胎、牌費、驗車)
       if (/SHELL|ESSO|CALTEX|中國石油|SINOPEC|PETRO|WILSON PARKING|URBAN PARKING|CAR PARK|CARPARK|停車場|泊車|入油|油費|油站|易通行|HKE TOLL|隧道|永興膠輪|汽車|車房|電池|輪胎|換油|車保|牌費|驗車|基信汽車|雨敵專業汽車/.test(text)) {
-        return '公司-車輛費用(油費/泊車/牌費)';
+        return '公司-車輛費用';
       }
       // #16 水、電、電話、網路等費用
       if (/電訊數碼|SUN MOBILE|HKT|PCCW|香港寬頻|HKBN|網上行|SMARTONE|數碼通|CMHK|中國移動|3HK|中電|CLP|港燈|HEC|水務署|電話費|上網|寬頻|網絡|網路|水費|電費|SIM卡|儲值卡/.test(text)) {
@@ -11601,7 +11611,7 @@ END $$;`;
           { id: 47, category_group: 'company', category_name: '公司-租金及管理費', excel_col: 'NONE', excel_title: '15. 租金、管理費及差餉', display_order: 47 },
           { id: 48, category_group: 'company', category_name: '公司-水電電話網絡費', excel_col: 'NONE', excel_title: '16. 水、電、電話、網路等費用', display_order: 48 },
           { id: 49, category_group: 'company', category_name: '公司-辦公及軟件費', excel_col: 'NONE', excel_title: '17. 辦公室用品及軟件費用', display_order: 49 },
-          { id: 50, category_group: 'company', category_name: '公司-車輛費用(油費/泊車/牌費)', excel_col: 'NONE', excel_title: '18. 車輛費用', display_order: 50 },
+          { id: 50, category_group: 'company', category_name: '公司-車輛費用', excel_col: 'NONE', excel_title: '18. 車輛費用', display_order: 50 },
           { id: 51, category_group: 'company', category_name: '公司-差旅及人事補貼', excel_col: 'NONE', excel_title: '19. 差旅、油費及人事補貼費用', display_order: 51 },
           { id: 52, category_group: 'company', category_name: '公司-招待費用', excel_col: 'NONE', excel_title: '20. 招待費用', display_order: 52 },
           { id: 53, category_group: 'company', category_name: '公司-備用零錢', excel_col: 'NONE', excel_title: '21. 備用零錢', display_order: 53 }
@@ -11648,12 +11658,21 @@ END $$;`;
         }
         const savedMap = JSON.parse(localStorage.getItem('RENOBOOK_CUSTOM_CAT_MAP') || 'null');
         if (savedMap && typeof savedMap === 'object') {
+          let dirtyMap = false;
           Object.entries(savedMap).forEach(([gKey, arr]) => {
             if (!CATEGORY_MAP[gKey]) CATEGORY_MAP[gKey] = [];
-            (arr || []).forEach(c => {
-              if (!CATEGORY_MAP[gKey].includes(c)) CATEGORY_MAP[gKey].push(c);
+            (arr || []).forEach(rawC => {
+              const c = (rawC === '公司-車輛費用(油費/泊車/牌費)') ? '公司-車輛費用' : rawC;
+              if (c !== rawC) dirtyMap = true;
+              if (c && !CATEGORY_MAP[gKey].includes(c)) CATEGORY_MAP[gKey].push(c);
             });
           });
+          if (Array.isArray(CATEGORY_MAP.company)) {
+            CATEGORY_MAP.company = CATEGORY_MAP.company.filter(x => x !== '公司-車輛費用(油費/泊車/牌費)');
+          }
+          if (dirtyMap) {
+            try { localStorage.setItem('RENOBOOK_CUSTOM_CAT_MAP', JSON.stringify(CATEGORY_MAP)); } catch (e) {}
+          }
         }
       } catch (e) {}
       syncCategoryGroupSelectors();
@@ -12910,15 +12929,30 @@ END $$;`;
         return d >= startDate && d <= endDate;
       });
 
-      const { filtered: activeWorkerPool } = getFilteredWorkersForDisplay();
-      // 若某位師傅喺當前結算半月有實際開工紀錄，即使舊師傅都照樣顯示喺本期出糧表
-      const workersWithLogsInPeriod = new Set(logs.map(l => (l.worker_name || '').trim()));
-      const basePool = workerRegistryData.filter(w =>
-        activeWorkerPool.some(aw => aw.name === w.name) || workersWithLogsInPeriod.has((w.name || '').trim())
+      // 只顯示喺本期有實際開工記錄 (work_days > 0) 嘅師傅；本期暫無開工記錄嘅師傅不顯示
+      const workersWithLogsInPeriod = new Set(
+        logs.filter(l => (Number(l.work_days) || 0) > 0).map(l => (l.worker_name || '').trim())
       );
+      const basePool = workerRegistryData.filter(w =>
+        workersWithLogsInPeriod.has((w.name || '').trim())
+      );
+      // 若日工紀錄入面有師傅尚未喺 workerRegistryData，亦自動補入計算池
+      logs.forEach(l => {
+        const wName = (l.worker_name || '').trim();
+        if (wName && (Number(l.work_days) || 0) > 0 && !basePool.some(w => (w.name || '').trim() === wName)) {
+          basePool.push({
+            id: 'w_temp_' + wName,
+            name: wName,
+            wage: inferDefaultWageByWorkerName(wName),
+            phone: '',
+            bank_name: '待補登記',
+            bank_acc: '-'
+          });
+        }
+      });
       let workersToCalc = workerFilter === 'ALL'
         ? [...basePool]
-        : workerRegistryData.filter(w => w.name === workerFilter);
+        : basePool.filter(w => w.name === workerFilter);
 
       const lastEntry = window.lastCloudVerifiedEntry;
       const payrollBanner = document.getElementById('payroll-cloud-confirm-banner');
@@ -13083,6 +13117,10 @@ END $$;`;
           </tr>
         `;
       }).join('');
+
+      if (workersToCalc.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="py-8 text-center text-slate-400 font-semibold">📅 本期（${escapeHtml(startDate)} 至 ${escapeHtml(endDate)}）暫無師傅開工記錄</td></tr>`;
+      }
 
       if (grandTotalEl) grandTotalEl.textContent = `本期應付總糧款：${fmtMoney(grandTotal)}`;
     }
