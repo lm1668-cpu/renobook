@@ -906,7 +906,7 @@ ov.classList.add("hidden");
 <div class="inline-flex flex-wrap items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/40 text-amber-300 text-[11px] font-bold">
 <span>✨ 香港裝修師傅大本營 · 帳目寶</span>
 <span class="text-amber-200/70">|</span>
-<span class="font-mono" id="hero-dynamic-stats-badge">649 個工程 · 32,695 筆雲端帳目</span>
+<span class="font-mono" id="hero-dynamic-stats-badge">649 個工程 · 32,708 筆雲端帳目</span>
 </div>
 <h1 class="text-xl sm:text-2xl md:text-3xl font-black tracking-tight leading-snug">
 工程實時損益與資金流水看板
@@ -1199,7 +1199,7 @@ ov.classList.add("hidden");
 <i class="fa-solid fa-chart-line"></i>
 </div>
 </div>
-<div class="mt-1.5 sm:mt-2 stat-num-kpi font-bold text-indigo-600 font-mono" id="kpi-total-profit">HK$ 39,696,566</div>
+<div class="mt-1.5 sm:mt-2 stat-num-kpi font-bold text-indigo-600 font-mono" id="kpi-total-profit">HK$ 39,693,046</div>
 <div class="mt-1 text-[11px] sm:text-xs text-slate-500 flex items-center justify-between gap-1">
 <span>平均毛利 <span class="font-semibold text-indigo-600" id="kpi-avg-margin">19.4%</span></span>
 <span class="text-[10px] text-indigo-600 font-bold">撳入睇明細 ›</span>
@@ -1217,7 +1217,7 @@ ov.classList.add("hidden");
 <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded font-medium">即時計算</span>
 </div>
 <div class="relative h-72">
-<canvas id="chart-project-pnl" width="984" height="864" style="box-sizing: border-box; display: block; height: 288px; width: 328px;"></canvas>
+<canvas id="chart-project-pnl" width="1366" height="576" style="box-sizing: border-box; display: block; height: 288px; width: 683px;"></canvas>
 </div>
 </div>
 <div class="ui-card p-5 flex flex-col justify-between">
@@ -1228,7 +1228,7 @@ ov.classList.add("hidden");
 </div>
 <p class="text-xs text-slate-400 mb-4">輔料 (9項) · 主材 (8項) · 外判工料 (18項)</p>
 <div class="relative h-56 flex items-center justify-center">
-<canvas id="chart-cost-breakdown" width="984" height="672" style="box-sizing: border-box; display: block; height: 224px; width: 328px;"></canvas>
+<canvas id="chart-cost-breakdown" width="617" height="448" style="box-sizing: border-box; display: block; height: 224px; width: 308px;"></canvas>
 </div>
 </div>
 <div class="mt-4 pt-4 border-t border-slate-100 grid grid-cols-3 gap-2 text-center text-xs">
@@ -1431,7 +1431,7 @@ ov.classList.add("hidden");
 <div class="text-[11px] text-slate-600 mt-2 font-mono space-y-1 border-t border-slate-100 pt-1.5">
 <div class="flex justify-between items-baseline gap-2"><span class="text-slate-400 shrink-0">外判人工費:</span><span id="det-subcon-summary" class="text-right">HK$ 24,000.00</span></div>
 <div class="flex justify-between items-baseline gap-2"><span class="text-slate-400 shrink-0">自購輔料+主材:</span><span id="det-materials-summary" class="text-right">HK$ 0.00</span></div>
-<div class="flex justify-between items-baseline gap-2"><span class="text-slate-400 shrink-0">日薪師傅工數:</span><span id="det-work-days" class="font-bold text-slate-800 text-right">18 工</span></div>
+<div class="flex justify-between items-baseline gap-2"><span class="text-slate-400 shrink-0">日薪師傅工數:</span><span id="det-work-days" class="font-bold text-slate-800 text-right">21 工</span></div>
 </div>
 </div>
 <div class="ui-card p-3.5 sm:p-4 min-w-0 bg-emerald-50/20">
@@ -1992,10 +1992,39 @@ ov.classList.add("hidden");
 <div id="qwi-projects-list" class="flex flex-wrap gap-1.5"></div>
 </div>
 </div>
+<!-- ⚡ 工種常用工序快速備註一鍵點選區 (自動跟隨師傅工種切換 + 支援多選疊加 + 後台自訂同步雲端) -->
+<div id="qf-trade-remarks-panel" class="p-3.5 rounded-2xl bg-gradient-to-br from-amber-50/90 via-white to-emerald-50/60 border-2 border-amber-400/60 shadow-xs space-y-2.5">
+<div class="flex flex-wrap items-center justify-between gap-2">
+<div class="flex items-center gap-2 flex-wrap">
+<span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-900 text-amber-300 text-[11px] font-extrabold">
+<i class="fa-solid fa-bolt"></i> 工種常用工序快選
+</span>
+<span class="text-xs font-extrabold text-slate-800">撳一下即自動填入下方「備註說明」（可多選疊加，免打字）</span>
+<span id="qf-trade-remark-active-badge" class="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">當前工種：🪚 木工</span>
+</div>
+<div class="flex items-center gap-1.5">
+<button type="button" onclick="clearQuickRemarkInput()" class="px-2.5 py-1 rounded-lg bg-white hover:bg-rose-50 text-slate-600 hover:text-rose-600 border border-slate-300 text-[11px] font-bold cursor-pointer transition">🧹 清空備註</button>
+<button type="button" onclick="openAdminTradeRemarksSection()" class="px-2.5 py-1 rounded-lg bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 text-[11px] font-extrabold cursor-pointer transition flex items-center gap-1">
+<i class="fa-solid fa-sliders"></i> <span>後台管理常用工序</span>
+</button>
+</div>
+</div>
+<!-- 7 大工種切換分頁標籤 -->
+<div id="qf-trade-remark-tabs" class="flex flex-wrap gap-1.5 pt-0.5"></div>
+<!-- 當前工種常用工序備註按鈕網格 -->
+<div id="qf-trade-remark-chips" class="flex flex-wrap gap-1.5 pt-1"></div>
+<!-- 即場快速新增工序入當前工種庫 -->
+<div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1.5 border-t border-amber-200/70">
+<div class="flex-1 flex items-center gap-1.5">
+<input type="text" id="qf-inline-new-trade-remark" placeholder="💡 想即場加新常用工序入呢個工種？（如：封石膏板、拉網批灰...）輸入後撳右邊儲存" onkeydown="if(event.key==='Enter'){event.preventDefault();addInlineTradeRemarkPreset();}" class="ui-input !bg-white !py-1.5 text-xs">
+<button type="button" onclick="addInlineTradeRemarkPreset()" class="px-3 py-1.5 rounded-xl bg-[#048264] hover:bg-emerald-700 text-white font-extrabold text-xs whitespace-nowrap cursor-pointer transition shadow-2xs shrink-0">➕ 加入常用並填入</button>
+</div>
+</div>
+</div>
 </div>
 <div>
 <label class="ui-label">備註說明</label>
-<input type="text" id="qf-remark" placeholder="補充備註，例如：車號、師傅交來、批盪材料..." class="ui-input !bg-white">
+<input type="text" id="qf-remark" oninput="if(typeof renderQuickTradeRemarkChips==='function') renderQuickTradeRemarkChips()" placeholder="補充備註，例如：車號、師傅交來、批盪材料（上方可一鍵點選工種常用工序）..." class="ui-input !bg-white">
 </div>
 <div id="qf-photo-upload-wrap">
 <div class="flex flex-wrap items-center justify-between gap-1 mb-1.5">
@@ -2088,7 +2117,7 @@ ov.classList.add("hidden");
 <span class="font-extrabold"><i class="fa-solid fa-calculator text-amber-600 mr-1"></i>按工程日數自動拆帳入「開支表」邏輯：</span>
 <span>系統會根據每位師傅喺本期每一個工程做咗幾多日（例如：A工程 5日、B工程 4.5日 × 日薪），自動拆分成多筆「<strong>公司-日薪工人</strong>」開支並連同出糧單據相片寫入對應工程嘅開支表！</span>
 </div>
-<span class="font-mono font-extrabold text-sm text-emerald-700 shrink-0" id="pay-grand-total">本期應付總糧款：HK$ 33,200.00</span>
+<span class="font-mono font-extrabold text-sm text-emerald-700 shrink-0" id="pay-grand-total">本期應付總糧款：HK$ 52,400.00</span>
 </div>
 <div id="payroll-cloud-confirm-banner" class="hidden p-3 rounded-xl bg-emerald-50 border-2 border-emerald-400 text-xs text-emerald-950 flex flex-wrap items-center justify-between gap-2 shadow-sm"></div>
 <div class="flex flex-wrap items-center justify-between gap-2 px-1 text-xs">
@@ -2278,7 +2307,7 @@ ov.classList.add("hidden");
 <select id="ml-category-filter" onchange="onMasterLedgerFilterChange()" class="ui-input !bg-white text-xs font-semibold"><option value="ALL">🏷️ 全部開支類別 (73項)</option><option value="輔料-保護">輔料-保護</option><option value="輔料-油漆">輔料-油漆</option><option value="輔料-泥水">輔料-泥水</option><option value="輔料-木器">輔料-木器</option><option value="輔料-廚櫃">輔料-廚櫃</option><option value="輔料-水喉">輔料-水喉</option><option value="輔料-電路">輔料-電路</option><option value="輔料-五金">輔料-五金</option><option value="輔料-其他">輔料-其他</option><option value="主材-地板">主材-地板</option><option value="主材-瓷磚">主材-瓷磚</option><option value="主材-潔具">主材-潔具</option><option value="主材-燈飾">主材-燈飾</option><option value="主材-油漆牆紙">主材-油漆牆紙</option><option value="主材-電器">主材-電器</option><option value="主材-鐵器">主材-鐵器</option><option value="主材-門鎖門抽">主材-門鎖門抽</option><option value="主材-皮革布藝">主材-皮革布藝</option><option value="主材-門鎖">主材-門鎖</option><option value="主材-床品">主材-床品</option><option value="主材-名貴傢俬">主材-名貴傢俬</option><option value="主材-音響">主材-音響</option><option value="主材-植物">主材-植物</option><option value="主材-家品">主材-家品</option><option value="主材-大理石">主材-大理石</option><option value="主材-活動傢俱">主材-活動傢俱</option><option value="外判-運輸工人">外判-運輸工人</option><option value="外判-清拆工人">外判-清拆工人</option><option value="外判-泥水工人">外判-泥水工人</option><option value="外判-電燈工人">外判-電燈工人</option><option value="外判-水喉工人">外判-水喉工人</option><option value="外判-清潔工人">外判-清潔工人</option><option value="外判-鋁窗工人">外判-鋁窗工人</option><option value="外判-棚架工人">外判-棚架工人</option><option value="外判-雲石工人">外判-雲石工人</option><option value="外判-傢俬工料">外判-傢俬工料</option><option value="公司-日薪工人">公司-日薪工人</option><option value="外判-玻璃間隔">外判-玻璃間隔</option><option value="外判-設計繪圖">外判-設計繪圖</option><option value="外判-工程承包">外判-工程承包</option><option value="外判-冷氣工程">外判-冷氣工程</option><option value="外判-地板打蠟">外判-地板打蠟</option><option value="外判-間隔天花">外判-間隔天花</option><option value="外判-裝修按金">外判-裝修按金</option><option value="外判-工程保險">外判-工程保險</option><option value="外判-燒焊打鐵">外判-燒焊打鐵</option><option value="外判-酒窖工程">外判-酒窖工程</option><option value="外判-泳池工程">外判-泳池工程</option><option value="外判-掛石工程">外判-掛石工程</option><option value="外判-電閘工程">外判-電閘工程</option><option value="外判-電梯工程">外判-電梯工程</option><option value="外判-保安工程">外判-保安工程</option><option value="外判-改建工程">外判-改建工程</option><option value="外判-渠務工程">外判-渠務工程</option><option value="公司-水電電話網絡費">公司-水電電話網絡費</option><option value="公司-車輛費用">公司-車輛費用</option><option value="公司-工具設備">公司-工具設備</option><option value="公司-租金及管理費">公司-租金及管理費</option><option value="公司-辦公及軟件費">公司-辦公及軟件費</option><option value="公司-電腦設備">公司-電腦設備</option><option value="公司-辦公室裝修">公司-辦公室裝修</option><option value="公司-車輛購置">公司-車輛購置</option><option value="公司-人員工資及強積金">公司-人員工資及強積金</option><option value="公司-項目佣金">公司-項目佣金</option><option value="公司-設計師佣金">公司-設計師佣金</option><option value="公司-年終花紅">公司-年終花紅</option><option value="公司-工程保險">公司-工程保險</option><option value="公司-售後服務及保養">公司-售後服務及保養</option><option value="公司-宣傳廣告費用">公司-宣傳廣告費用</option><option value="公司-差旅及人事補貼">公司-差旅及人事補貼</option><option value="公司-招待費用">公司-招待費用</option><option value="公司-備用零錢">公司-備用零錢</option><option value="未分類開支">未分類開支</option></select>
 </div>
 <div id="ml-worker-filter-wrap" class="hidden min-w-0">
-<select id="ml-worker-filter" onchange="onMasterLedgerFilterChange()" class="ui-input !bg-white text-xs font-semibold"><option value="ALL">👷 全部日薪師傅 (共 24 位)</option><option value="油漆">油漆 (2585工)</option><option value="木工-阿峰">木工-阿峰 (1538工)</option><option value="木工">木工 (1499.5工)</option><option value="木工-阿泰">木工-阿泰 (1017工)</option><option value="油漆-阿林">油漆-阿林 (718.5工)</option><option value="木工-泉仔">木工-泉仔 (313工)</option><option value="電工-阿倫">電工-阿倫 (140工)</option><option value="油漆-傑仔">油漆-傑仔 (126.5工)</option><option value="油漆-旺哥">油漆-旺哥 (115工)</option><option value="電工-光仔">電工-光仔 (111工)</option><option value="油漆-阿南">油漆-阿南 (81工)</option><option value="油漆-阿成">油漆-阿成 (77工)</option><option value="油漆-偉仔">油漆-偉仔 (51工)</option><option value="電工">電工 (42工)</option><option value="油漆-阿偉">油漆-阿偉 (33工)</option><option value="電燈">電燈 (32工)</option><option value="木工-明仔">木工-明仔 (29工)</option><option value="木工-阿華">木工-阿華 (28工)</option><option value="木工-華叔">木工-華叔 (27工)</option><option value="電工-肥仔">電工-肥仔 (14工)</option><option value="雜工-阿龍">雜工-阿龍 (8工)</option><option value="油漆-阿勝">油漆-阿勝 (4工)</option><option value="泥水-柏仔">泥水-柏仔</option><option value="電工-阿聰">電工-阿聰</option></select>
+<select id="ml-worker-filter" onchange="onMasterLedgerFilterChange()" class="ui-input !bg-white text-xs font-semibold"><option value="ALL">👷 全部日薪師傅 (共 24 位)</option><option value="油漆">油漆 (2586工)</option><option value="木工-阿峰">木工-阿峰 (1538工)</option><option value="木工">木工 (1499.5工)</option><option value="木工-阿泰">木工-阿泰 (1019工)</option><option value="油漆-阿林">油漆-阿林 (718.5工)</option><option value="木工-泉仔">木工-泉仔 (315工)</option><option value="電工-阿倫">電工-阿倫 (142工)</option><option value="油漆-傑仔">油漆-傑仔 (126.5工)</option><option value="油漆-旺哥">油漆-旺哥 (115工)</option><option value="電工-光仔">電工-光仔 (111工)</option><option value="油漆-阿南">油漆-阿南 (81工)</option><option value="油漆-阿成">油漆-阿成 (79工)</option><option value="油漆-偉仔">油漆-偉仔 (51工)</option><option value="電工">電工 (42工)</option><option value="油漆-阿偉">油漆-阿偉 (34工)</option><option value="電燈">電燈 (32工)</option><option value="木工-明仔">木工-明仔 (29工)</option><option value="木工-華叔">木工-華叔 (29工)</option><option value="木工-阿華">木工-阿華 (28工)</option><option value="電工-肥仔">電工-肥仔 (14工)</option><option value="雜工-阿龍">雜工-阿龍 (8工)</option><option value="油漆-阿勝">油漆-阿勝 (4工)</option><option value="泥水-柏仔">泥水-柏仔</option><option value="電工-阿聰">電工-阿聰</option></select>
 </div>
 <div class="flex gap-2 min-w-0">
 <button type="button" onclick="loadMasterLedgerFromCloud(true)" class="flex-1 h-[42px] px-3 bg-blue-950 hover:bg-blue-900 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer">
@@ -2292,11 +2321,11 @@ ov.classList.add("hidden");
 <!-- Live Filtered Summary Strip -->
 <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 text-xs">
 <div class="flex flex-wrap items-center gap-4">
-<span class="text-slate-500">當前顯示：<strong class="text-slate-900 font-mono" id="ml-stat-count">20,542</strong> 筆紀錄</span>
-<span class="text-slate-500" id="ml-stat-sum-label">篩選開支總額：<strong class="text-rose-600 font-mono text-sm" id="ml-stat-sum">HK$ 160,887,345.85</strong></span>
+<span class="text-slate-500">當前顯示：<strong class="text-slate-900 font-mono" id="ml-stat-count">20,543</strong> 筆紀錄</span>
+<span class="text-slate-500" id="ml-stat-sum-label">篩選開支總額：<strong class="text-rose-600 font-mono text-sm" id="ml-stat-sum">HK$ 160,890,865.85</strong></span>
 </div>
 <div class="flex items-center gap-2">
-<span class="text-[11px] text-slate-400" id="ml-cloud-status">🟢 已全量同步雲端 (開支 20,542 筆 · 收款 1,358 筆 · 日工 10,146 筆 · 師傅 24 位)</span>
+<span class="text-[11px] text-slate-400" id="ml-cloud-status">🟢 已全量同步雲端 (開支 20,543 筆 · 收款 1,358 筆 · 日工 10,158 筆 · 師傅 24 位)</span>
 <select id="ml-page-size" onchange="onMasterLedgerPageSizeChange(this.value)" class="px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-semibold text-slate-700">
 <option value="50" selected="">每頁 50 行</option>
 <option value="100">每頁 100 行</option>
@@ -2328,7 +2357,7 @@ ov.classList.add("hidden");
 </table>
 </div>
 <div class="p-3.5 bg-slate-50 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-500">
-<span id="ml-pagination-info" class="font-medium text-slate-600">顯示第 1 - 50 筆，資料庫共 20,542 筆（第 1 / 411 頁）</span>
+<span id="ml-pagination-info" class="font-medium text-slate-600">顯示第 1 - 50 筆，資料庫共 20,543 筆（第 1 / 411 頁）</span>
 <div id="ml-pagination-controls" class="flex flex-wrap items-center gap-1"></div>
 </div>
 </div>
@@ -2546,7 +2575,7 @@ ov.classList.add("hidden");
 <div id="inv-render-doc-title" class="inv-title">INVOICE</div>
 <table class="inv-header-table">
 <thead><tr><th id="inv-render-num-header">INVOICE #</th><th>DATE</th></tr></thead>
-<tbody><tr><td id="inv-render-number">INV-202611-024</td><td id="inv-render-date">11/06/2026</td></tr></tbody>
+<tbody><tr><td id="inv-render-number">INV-202611-024</td><td id="inv-render-date">11/07/2026</td></tr></tbody>
 </table>
 </div>
 </div>
@@ -2867,6 +2896,37 @@ ov.classList.add("hidden");
 </div>
 </div>
 </div>
+<!-- 4E. 各工種「常用工序備註」後台自訂管理 (木工 / 泥水 / 油漆 / 電工 / 水喉 / 清拆雜工 / 冷氣其他) -->
+<div id="admin-trade-remarks-card" class="ui-card p-5 space-y-4 border-2 border-amber-500/60 bg-gradient-to-br from-amber-50/50 via-white to-emerald-50/30">
+<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-200 pb-3">
+<div>
+<div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-900 text-amber-300 text-[11px] font-extrabold mb-1">
+🛠️ 師傅日工免打字神器 · 雲端同步工序庫
+</div>
+<h2 class="font-extrabold text-slate-900 text-base">⚡ 4E. 各工種「常用工序備註」後台管理（木工 / 泥水 / 油漆 / 電工 / 水喉 / 清拆）</h2>
+<p class="text-xs text-slate-500">喺度可以按不同工種自由新增或刪除常用施工工序（例如木工「釘假天花」、電工「穿線裝掣」、泥水「批盪防水」、油漆「鏟底批灰」）。新增或修改後會即時自動同步上 Supabase 雲端，喺「記錄師傅日工數」揀師傅時就會自動彈出對應工種嘅快速備註掣！</p>
+</div>
+<div class="flex flex-wrap items-center gap-2 shrink-0">
+<button type="button" onclick="resetDefaultTradeRemarks()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-xl font-bold whitespace-nowrap cursor-pointer">🔄 還原預設常用工序庫</button>
+<button type="button" id="btn-save-trade-remarks" onclick="saveTradeRemarksToCloudManual()" class="text-xs bg-[#048264] hover:bg-emerald-700 text-white px-3.5 py-1.5 rounded-xl font-extrabold shadow-xs whitespace-nowrap transition cursor-pointer">☁️ 儲存並同步至雲端</button>
+</div>
+</div>
+<!-- 後台工種切換分頁 -->
+<div id="admin-trade-remark-tabs" class="flex flex-wrap gap-1.5"></div>
+<!-- 新增工序輸入列 -->
+<div class="p-3.5 rounded-2xl bg-slate-900 text-white space-y-2.5 border border-slate-700">
+<div class="flex flex-wrap items-center justify-between gap-2">
+<span id="admin-trade-remark-current-label" class="text-xs font-extrabold text-amber-300">🪚 正在管理：木工師傅常用工序</span>
+<span id="admin-trade-remark-count-badge" class="text-[11px] font-mono font-bold text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-2.5 py-0.5 rounded-full">共 10 項工序</span>
+</div>
+<div class="flex flex-col sm:flex-row gap-2">
+<input type="text" id="admin-new-trade-remark-input" placeholder="輸入要新增嘅常用工序名稱（例如：造隱形門、改電掣位、鋪企缸磚...）可一次過用頓號「、」分隔輸入多個" onkeydown="if(event.key==='Enter'){event.preventDefault();addAdminTradeRemarkItem();}" class="ui-input !bg-slate-800 !text-white !border-slate-600 text-xs flex-1">
+<button type="button" onclick="addAdminTradeRemarkItem()" class="px-4 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-xs whitespace-nowrap cursor-pointer transition shrink-0">➕ 新增工序備註</button>
+</div>
+</div>
+<!-- 當前工種已儲存嘅工序列表（可點擊刪除或調整順序） -->
+<div id="admin-trade-remark-items-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2"></div>
+</div>
 <!-- 5. 過往開支及收支紀錄編輯專區 (#12 能夠編輯過往輸入或者已經喺資料庫裏面嘅開支和收支紀錄) -->
 <div id="admin-ledger-editor-card" class="ui-card p-5 space-y-4 border-2 border-blue-900/25 bg-gradient-to-br from-white to-slate-50">
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-200 pb-3">
@@ -3019,7 +3079,7 @@ ov.classList.add("hidden");
 </div>
 <div class="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex flex-wrap items-center justify-between gap-3 text-xs text-slate-600">
 <div class="flex flex-wrap items-center gap-3">
-<span id="adm-rec-pagination-info" class="font-bold text-slate-700">顯示第 1 - 50 筆，共 20,542 筆紀錄（第 1 / 411 頁）</span>
+<span id="adm-rec-pagination-info" class="font-bold text-slate-700">顯示第 1 - 50 筆，共 20,543 筆紀錄（第 1 / 411 頁）</span>
 <div class="flex items-center gap-1.5">
 <label for="adm-rec-page-size" class="text-slate-500">每頁顯示:</label>
 <select id="adm-rec-page-size" onchange="onAdminRecPageSizeChange(this.value)" class="px-2.5 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold text-slate-800">
@@ -3130,7 +3190,7 @@ ov.classList.add("hidden");
 <button type="button" onclick="switchMainTab('preview')" class="flex flex-col items-center justify-center py-0.5 text-emerald-400 whitespace-nowrap truncate"><span>📄 預覽</span></button>
 </nav>
 <!-- Supabase DB Modal (API Key Masked for Security) -->
-<div id="db-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+<div id="db-modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm items-center justify-center z-50 p-4 hidden">
 <div class="bg-white rounded-3xl max-w-md w-full p-6 space-y-4 shadow-2xl border border-slate-100">
 <div class="flex justify-between items-center border-b pb-3">
 <h3 class="font-extrabold text-base text-slate-800">⚡ Supabase 資料庫連線設定</h3>
@@ -3999,7 +4059,7 @@ if (box) box.innerHTML = placeholder;
 'adm-rec-tbody', 'adm-rec-pagination-controls', 'audit-undo-log-tbody', 'det-subcon-contracts-tbody',
 'scm-modal-tbody', 'qom-tbody', 'kpi-modal-tbody', 'line-items-container', 'inv-render-items-body',
 'inv-render-summary-rows', 'company-overhead-grid', 'qf-worker-avatar-grid',
-'admin-pinned-workers-preview', 'admin-all-workers-avatar-grid', 'trade-wage-Presets-grid',
+'admin-pinned-workers-preview', 'admin-all-workers-avatar-grid', 'trade-wage-Presets-grid', 'qf-trade-remark-tabs', 'qf-trade-remark-chips', 'admin-trade-remark-tabs', 'admin-trade-remark-items-grid',
 'admin-payment-phases-list', 'admin-categories-overview', 'qwi-projects-list',
 'pic-datalist', 'scm-payee-datalist', 'qf-payee-dropdown', 'qf-payer-dropdown'].forEach(id => {
 const container = clone.querySelector('#' + id);
@@ -4741,7 +4801,7 @@ debounceCloudWrite(key, async () => {
 if (typeof syncLocalCustomCategoriesToCloud === 'function') await syncLocalCustomCategoriesToCloud();
 if (typeof persistPinnedWorkersToCloud === 'function') await persistPinnedWorkersToCloud(false);
 }, 250);
-} else if (['RENOBOOK_CUSTOM_GROUPS', 'RENOBOOK_VO_MAP', 'RENOBOOK_PAYROLL_POSTED', 'RENOBOOK_WORKER_WAGE_OVERRIDES', 'RENOBOOK_TRADE_WAGES', 'RENOBOOK_PINNED_WORKERS', 'RENOBOOK_WORKER_AVATARS', 'INV_DELETED_BLACKLIST'].includes(key)) {
+} else if (['RENOBOOK_CUSTOM_GROUPS', 'RENOBOOK_VO_MAP', 'RENOBOOK_PAYROLL_POSTED', 'RENOBOOK_WORKER_WAGE_OVERRIDES', 'RENOBOOK_TRADE_WAGES', 'RENOBOOK_TRADE_REMARKS', 'RENOBOOK_PINNED_WORKERS', 'RENOBOOK_WORKER_AVATARS', 'INV_DELETED_BLACKLIST'].includes(key)) {
 scheduleCloudMetaBundleSync();
 } else if (key === 'RENOBOOK_SUBCON_CONTRACTS') {
 debounceCloudWrite(key, async () => {
@@ -7050,6 +7110,9 @@ if (cloudPinnedCfg.tradeWages && typeof cloudPinnedCfg.tradeWages === 'object') 
 const localTrade = getTradeWagesConfig();
 const mergedTrade = { ...localTrade, ...cloudPinnedCfg.tradeWages };
 localStorage.setItem('RENOBOOK_TRADE_WAGES', JSON.stringify(mergedTrade));
+}
+if (cloudPinnedCfg.tradeRemarks && typeof cloudPinnedCfg.tradeRemarks === 'object') {
+if (typeof applyCloudTradeRemarksConfig === 'function') applyCloudTradeRemarksConfig(cloudPinnedCfg.tradeRemarks);
 }
 if (typeof renderQuickWorkerAvatarGrid === 'function') renderQuickWorkerAvatarGrid();
 if (typeof renderAdminPinnedWorkersManager === 'function') renderAdminPinnedWorkersManager();
@@ -12454,6 +12517,7 @@ ${items.map(sub => `
             payrollPosted: typeof getPayrollPostedMap === 'function' ? getPayrollPostedMap() : {},
             wageOverrides: typeof getWorkerWageOverridesMap === 'function' ? getWorkerWageOverridesMap() : {},
             tradeWages: typeof getTradeWagesConfig === 'function' ? getTradeWagesConfig() : {},
+            tradeRemarks: typeof getTradeRemarksConfig === 'function' ? getTradeRemarksConfig() : {},
             deletedIds: getDeletedIdsBlacklist().slice(-500)
           });
           const { data: existing } = await supabaseClient.from('catalog_items').select('id').like('description', '__PINNED_WORKERS__:%').limit(1);
@@ -12789,7 +12853,251 @@ ${isPinned ? '⭐ 已釘選' : '➕ 設為常用'}
       return Number(cfg[tKey]?.defaultWage || 1500);
     }
 
-    function renderTradeWageSettingsBar() {
+    const TRADE_REMARK_CATEGORIES = [
+{ key: 'carpenter', icon: '🪚', label: '木工', fullLabel: '木工師傅常用工序' },
+{ key: 'masonry', icon: '🧱', label: '泥水', fullLabel: '泥水師傅常用工序' },
+{ key: 'paint', icon: '🎨', label: '油漆', fullLabel: '油漆師傅常用工序' },
+{ key: 'electrical', icon: '⚡', label: '電工', fullLabel: '電工師傅常用工序' },
+{ key: 'plumbing', icon: '🚰', label: '水喉', fullLabel: '水喉師傅常用工序' },
+{ key: 'demolition', icon: '🔨', label: '清拆/雜工', fullLabel: '清拆及雜工常用工序' },
+{ key: 'ac', icon: '❄️', label: '冷氣/其他', fullLabel: '冷氣、鋁窗及其他工序' }
+];
+const DEFAULT_TRADE_REMARKS_MAP = {
+carpenter: ['釘假天花', '造燈槽及窗簾殼', '裝大門及房門框', '現場造衣櫃/儲物櫃', '裝廚櫃及吊櫃', '造木地台床', '封木板間牆', '裝門鎖及五金鉸', '包暗門及牆身飾面板', '執修木器傢俬'],
+masonry: ['批盪找平牆身', '地台批盪找平', '廁所塗刷防水層', '試水測試及保護', '鋪客飯廳地磚', '鋪廚廁牆磚及地磚', '砌磚間牆', '企缸造斜水及壆位', '鋪雲石吸咀及窗台石', '裝地腳線及掃口'],
+paint: ['鏟底及防潮底漆', '批灰三次及打磨', '全屋牆身及天花批灰', '噴塗/油乳膠漆面漆', '油木門及門框磁漆', '修補裂紋及執灰', '撕除牆紙及執底', '家具油手掃漆', '完工油漆執漏'],
+electrical: ['開坑藏喉及穿電線', '安裝及改位掣箱(MCB)', '裝曲架掣及插蘇面板', '裝天花燈及射燈燈帶', '拉寬頻網線及電視線', '裝抽氣扇及浴室寶', '駁熱水爐及冷氣電位', '全屋放線及通電測試'],
+plumbing: ['開坑鋪冷熱水銅喉', '改來去水喉位', '谷磅試水壓測試', '裝座廁及洗手盆龍頭', '裝花灑龍頭及企缸去水', '駁廚房星盆及洗衣機水路', '更換總掣及減壓閥'],
+demolition: ['清拆舊傢俬及木器', '打拆舊廚廁牆地磚', '打拆非主力間牆', '清理泥頭入袋及落樓', '鋪全屋地面及大堂保護', '跟車搬運材料上樓', '地盤大清潔及開荒'],
+ac: ['裝分體冷氣室內外機', '放雪種銅喉及保溫棉', '造冷氣去水喉', '清洗冷氣及試機', '安裝玻璃浴屏/鋁窗', '安裝全屋訂造傢俬']
+};
+let currentQuickTradeRemarkKey = 'carpenter';
+let currentAdminTradeRemarkKey = 'carpenter';
+function getTradeRemarksConfig() {
+const result = {};
+TRADE_REMARK_CATEGORIES.forEach(c => { result[c.key] = [...(DEFAULT_TRADE_REMARKS_MAP[c.key] || [])]; });
+try {
+const raw = localStorage.getItem('RENOBOOK_TRADE_REMARKS');
+if (raw) {
+const parsed = JSON.parse(raw);
+if (parsed && typeof parsed === 'object') {
+TRADE_REMARK_CATEGORIES.forEach(c => {
+if (Array.isArray(parsed[c.key])) {
+result[c.key] = parsed[c.key].map(s => String(s || '').trim()).filter(Boolean);
+}
+});
+}
+}
+} catch (e) {}
+return result;
+}
+function saveTradeRemarksConfig(cfg) {
+try { localStorage.setItem('RENOBOOK_TRADE_REMARKS', JSON.stringify(cfg)); } catch (e) {}
+renderQuickTradeRemarkChips();
+renderAdminTradeRemarksManager();
+}
+function applyCloudTradeRemarksConfig(cloudMap) {
+if (!cloudMap || typeof cloudMap !== 'object') return;
+const localCfg = getTradeRemarksConfig();
+let changed = false;
+TRADE_REMARK_CATEGORIES.forEach(c => {
+if (Array.isArray(cloudMap[c.key])) {
+const merged = Array.from(new Set([...cloudMap[c.key].map(s => String(s || '').trim()).filter(Boolean), ...(localCfg[c.key] || [])]));
+if (JSON.stringify(merged) !== JSON.stringify(localCfg[c.key])) {
+localCfg[c.key] = merged;
+changed = true;
+}
+}
+});
+if (changed) {
+try {
+window._isApplyingCloudStateToLocal = true;
+localStorage.setItem('RENOBOOK_TRADE_REMARKS', JSON.stringify(localCfg));
+} catch (e) {} finally {
+window._isApplyingCloudStateToLocal = false;
+}
+renderQuickTradeRemarkChips();
+renderAdminTradeRemarksManager();
+}
+}
+function mapAvatarKeyToTradeRemarkKey(avatarKey) {
+if (['carpenter', 'assembly', 'flooring'].includes(avatarKey)) return 'carpenter';
+if (['masonry', 'marble'].includes(avatarKey)) return 'masonry';
+if (avatarKey === 'paint') return 'paint';
+if (avatarKey === 'electrical') return 'electrical';
+if (avatarKey === 'plumbing') return 'plumbing';
+if (['demolition', 'handyman', 'cleaning', 'transport'].includes(avatarKey)) return 'demolition';
+if (['ac', 'window', 'glass', 'foreman'].includes(avatarKey)) return 'ac';
+return 'carpenter';
+}
+function autoSwitchQuickTradeRemarksByAvatarKey(avatarKey, workerName = '') {
+currentQuickTradeRemarkKey = mapAvatarKeyToTradeRemarkKey(avatarKey);
+renderQuickTradeRemarkChips(workerName);
+}
+function selectQuickTradeRemarkTab(tradeKey) {
+currentQuickTradeRemarkKey = tradeKey;
+renderQuickTradeRemarkChips();
+}
+function parseCurrentRemarkTokens() {
+const input = document.getElementById('qf-remark');
+if (!input || !input.value.trim()) return [];
+return input.value.split(/[、,，;；]+/).map(s => s.trim()).filter(Boolean);
+}
+function toggleQuickTradeRemarkPhrase(phrase) {
+const cleanPhrase = String(phrase || '').trim();
+if (!cleanPhrase) return;
+const input = document.getElementById('qf-remark');
+if (!input) return;
+const tokens = parseCurrentRemarkTokens();
+const idx = tokens.indexOf(cleanPhrase);
+if (idx > -1) tokens.splice(idx, 1);
+else tokens.push(cleanPhrase);
+input.value = tokens.join('、');
+renderQuickTradeRemarkChips();
+}
+function clearQuickRemarkInput() {
+const input = document.getElementById('qf-remark');
+if (input) input.value = '';
+renderQuickTradeRemarkChips();
+}
+function renderQuickTradeRemarkChips(workerNameHint = '') {
+const tabsEl = document.getElementById('qf-trade-remark-tabs');
+const chipsEl = document.getElementById('qf-trade-remark-chips');
+const badgeEl = document.getElementById('qf-trade-remark-active-badge');
+if (!tabsEl || !chipsEl) return;
+const cfg = getTradeRemarksConfig();
+const activeCat = TRADE_REMARK_CATEGORIES.find(c => c.key === currentQuickTradeRemarkKey) || TRADE_REMARK_CATEGORIES[0];
+if (badgeEl) badgeEl.textContent = `當前工種：${activeCat.icon} ${activeCat.label}`;
+tabsEl.innerHTML = TRADE_REMARK_CATEGORIES.map(c => {
+const isAct = c.key === activeCat.key;
+const count = (cfg[c.key] || []).length;
+return `<button type="button" onclick="selectQuickTradeRemarkTab('${c.key}')" class="px-2.5 py-1 rounded-xl text-xs font-extrabold transition cursor-pointer flex items-center gap-1 ${isAct ? 'bg-slate-900 text-amber-300 shadow-xs ring-2 ring-amber-400/60' : 'bg-white hover:bg-amber-100/70 text-slate-700 border border-slate-300'}"><span>${c.icon} ${escapeHtml(c.label)}</span><span class="text-[10px] px-1.5 py-0 rounded-full ${isAct ? 'bg-amber-400/20 text-amber-200' : 'bg-slate-100 text-slate-500'}">${count}</span></button>`;
+}).join('');
+const items = cfg[activeCat.key] || [];
+const activeTokens = parseCurrentRemarkTokens();
+if (items.length === 0) {
+chipsEl.innerHTML = `<span class="text-xs text-slate-400 py-1">此工種暫無預設工序，可喺下方輸入框即場新增或到後台加入。</span>`;
+return;
+}
+chipsEl.innerHTML = items.map(item => {
+const isSelected = activeTokens.includes(item);
+const jsSafe = escapeHtml(item).replace(/'/g, "\'");
+return `<button type="button" onclick="toggleQuickTradeRemarkPhrase('${jsSafe}')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${isSelected ? 'bg-[#048264] text-white shadow-xs ring-2 ring-emerald-300' : 'bg-white hover:bg-emerald-50 text-slate-800 border border-slate-300 shadow-2xs'}"><span>${isSelected ? '✓' : '+'}</span><span>${escapeHtml(item)}</span></button>`;
+}).join('');
+}
+function addInlineTradeRemarkPreset() {
+const inEl = document.getElementById('qf-inline-new-trade-remark');
+if (!inEl) return;
+const raw = inEl.value.trim();
+if (!raw) { showToast('⚠️ 請先輸入要加入嘅常用工序名稱'); return; }
+const newItems = raw.split(/[、,，;；]+/).map(s => s.trim()).filter(Boolean);
+if (newItems.length === 0) return;
+const cfg = getTradeRemarksConfig();
+const list = cfg[currentQuickTradeRemarkKey] || [];
+newItems.forEach(item => { if (!list.includes(item)) list.push(item); });
+cfg[currentQuickTradeRemarkKey] = list;
+inEl.value = '';
+saveTradeRemarksConfig(cfg);
+const remIn = document.getElementById('qf-remark');
+if (remIn) {
+const tokens = parseCurrentRemarkTokens();
+newItems.forEach(item => { if (!tokens.includes(item)) tokens.push(item); });
+remIn.value = tokens.join('、');
+renderQuickTradeRemarkChips();
+}
+const catObj = TRADE_REMARK_CATEGORIES.find(c => c.key === currentQuickTradeRemarkKey);
+showToast(`✅ 已將「${newItems.join('、')}」永久加入【${catObj ? catObj.label : '當前工種'}】常用工序並填入備註！`);
+}
+function openAdminTradeRemarksSection() {
+currentAdminTradeRemarkKey = currentQuickTradeRemarkKey || 'carpenter';
+switchMainTab('admin');
+renderAdminTradeRemarksManager();
+setTimeout(() => { document.getElementById('admin-trade-remarks-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
+}
+function selectAdminTradeRemarkTab(tradeKey) {
+currentAdminTradeRemarkKey = tradeKey;
+renderAdminTradeRemarksManager();
+}
+function renderAdminTradeRemarksManager() {
+const tabsEl = document.getElementById('admin-trade-remark-tabs');
+const gridEl = document.getElementById('admin-trade-remark-items-grid');
+const labelEl = document.getElementById('admin-trade-remark-current-label');
+const countEl = document.getElementById('admin-trade-remark-count-badge');
+if (!tabsEl || !gridEl) return;
+const cfg = getTradeRemarksConfig();
+const activeCat = TRADE_REMARK_CATEGORIES.find(c => c.key === currentAdminTradeRemarkKey) || TRADE_REMARK_CATEGORIES[0];
+const list = cfg[activeCat.key] || [];
+if (labelEl) labelEl.textContent = `${activeCat.icon} 正在管理：${activeCat.fullLabel}`;
+if (countEl) countEl.textContent = `共 ${list.length} 項工序`;
+tabsEl.innerHTML = TRADE_REMARK_CATEGORIES.map(c => {
+const isAct = c.key === activeCat.key;
+const cnt = (cfg[c.key] || []).length;
+return `<button type="button" onclick="selectAdminTradeRemarkTab('${c.key}')" class="px-3 py-1.5 rounded-xl text-xs font-extrabold transition cursor-pointer flex items-center gap-1.5 ${isAct ? 'bg-slate-900 text-amber-300 shadow-sm ring-2 ring-amber-400/60' : 'bg-white hover:bg-amber-50 text-slate-700 border border-slate-300'}"><span>${c.icon} ${escapeHtml(c.label)}</span><span class="text-[10px] px-1.5 py-0.5 rounded-full ${isAct ? 'bg-amber-400/20 text-amber-200' : 'bg-slate-100 text-slate-600'}">${cnt}</span></button>`;
+}).join('');
+if (list.length === 0) {
+gridEl.innerHTML = `<div class="col-span-full py-6 text-center text-slate-400 text-xs bg-white rounded-xl border border-dashed border-slate-300">此工種暫無常用工序，請喺上方輸入框新增。</div>`;
+return;
+}
+gridEl.innerHTML = list.map((item, idx) => {
+const jsSafe = escapeHtml(item).replace(/'/g, "\'");
+return `<div class="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-white border border-slate-200 shadow-2xs hover:border-amber-400 transition"><span class="text-xs font-bold text-slate-800 truncate"><span class="text-slate-400 font-mono mr-1.5">${idx + 1}.</span>${escapeHtml(item)}</span><div class="flex items-center gap-1 shrink-0">` +
+(idx > 0 ? `<button type="button" onclick="moveAdminTradeRemarkItem(${idx}, -1)" class="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold cursor-pointer" title="上移">◀</button>` : '') +
+(idx < list.length - 1 ? `<button type="button" onclick="moveAdminTradeRemarkItem(${idx}, 1)" class="w-6 h-6 rounded bg-slate-100 hover:bg-slate-200 text-slate-600 text-[10px] font-bold cursor-pointer" title="下移">▶</button>` : '') +
+`<button type="button" onclick="deleteAdminTradeRemarkItem('${jsSafe}')" class="w-6 h-6 rounded bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white text-xs font-bold cursor-pointer transition" title="刪除此工序">✕</button></div></div>`;
+}).join('');
+}
+function addAdminTradeRemarkItem() {
+if (typeof checkDatabaseReadOnlyBlocked === 'function' && checkDatabaseReadOnlyBlocked('新增常用工序備註')) return;
+const inEl = document.getElementById('admin-new-trade-remark-input');
+if (!inEl) return;
+const raw = inEl.value.trim();
+if (!raw) { showToast('⚠️ 請輸入工序備註名稱'); return; }
+const newItems = raw.split(/[、,，;；]+/).map(s => s.trim()).filter(Boolean);
+const cfg = getTradeRemarksConfig();
+const list = cfg[currentAdminTradeRemarkKey] || [];
+let added = 0;
+newItems.forEach(item => { if (!list.includes(item)) { list.push(item); added++; } });
+cfg[currentAdminTradeRemarkKey] = list;
+inEl.value = '';
+saveTradeRemarksConfig(cfg);
+const catObj = TRADE_REMARK_CATEGORIES.find(c => c.key === currentAdminTradeRemarkKey);
+showToast(added > 0 ? `✅ 已新增 ${added} 項【${catObj ? catObj.label : ''}】常用工序並同步雲端！` : 'ℹ️ 該工序已存在於清單中');
+}
+function deleteAdminTradeRemarkItem(itemText) {
+if (typeof checkDatabaseReadOnlyBlocked === 'function' && checkDatabaseReadOnlyBlocked('刪除常用工序備註')) return;
+const cfg = getTradeRemarksConfig();
+const list = cfg[currentAdminTradeRemarkKey] || [];
+cfg[currentAdminTradeRemarkKey] = list.filter(x => x !== itemText);
+saveTradeRemarksConfig(cfg);
+showToast(`🗑️ 已移除工序「${itemText}」並同步雲端`);
+}
+function moveAdminTradeRemarkItem(idx, dir) {
+const cfg = getTradeRemarksConfig();
+const list = [...(cfg[currentAdminTradeRemarkKey] || [])];
+const targetIdx = idx + dir;
+if (targetIdx < 0 || targetIdx >= list.length) return;
+const tmp = list[idx];
+list[idx] = list[targetIdx];
+list[targetIdx] = tmp;
+cfg[currentAdminTradeRemarkKey] = list;
+saveTradeRemarksConfig(cfg);
+}
+function resetDefaultTradeRemarks() {
+if (typeof checkDatabaseReadOnlyBlocked === 'function' && checkDatabaseReadOnlyBlocked('還原預設工序庫')) return;
+const fresh = {};
+TRADE_REMARK_CATEGORIES.forEach(c => { fresh[c.key] = [...(DEFAULT_TRADE_REMARKS_MAP[c.key] || [])]; });
+saveTradeRemarksConfig(fresh);
+showToast('🔄 已還原 7 大工種預設常用工序庫並同步至雲端');
+}
+async function saveTradeRemarksToCloudManual() {
+const btn = document.getElementById('btn-save-trade-remarks');
+if (typeof setCloudButtonStatus === 'function') setCloudButtonStatus(btn, 'updating', '🔄 正在同步至雲端...');
+await persistPinnedWorkersToCloud(false);
+if (typeof setCloudButtonStatus === 'function') setCloudButtonStatus(btn, 'success', '✅ 已同步至雲端！', 2200);
+showToast('☁️ 各工種常用工序備註已成功同步至 Supabase 雲端資料庫！');
+}
+
+function renderTradeWageSettingsBar() {
       const grid = document.getElementById('trade-wage-Presets-grid');
       if (!grid) return;
       const cfg = getTradeWagesConfig();
@@ -13043,6 +13351,8 @@ class="w-full py-1 px-2 rounded-lg bg-amber-500/20 hover:bg-amber-400 hover:text
         try { localStorage.setItem('RENOBOOK_WORKERS', JSON.stringify(workerRegistryData)); } catch (e) {}
       }
       renderTradeWageSettingsBar();
+if (typeof renderQuickTradeRemarkChips === 'function') renderQuickTradeRemarkChips();
+if (typeof renderAdminTradeRemarksManager === 'function') renderAdminTradeRemarksManager();
       populateWorkerSelectors();
       populateMasterLedgerFilters();
       renderWorkerRegistryTable();
@@ -13258,6 +13568,7 @@ class="w-full py-1 px-2 rounded-lg bg-amber-500/20 hover:bg-amber-400 hover:text
       if (avEl) avEl.src = avInfo.src;
       const trBadgeEl = document.getElementById('qwi-trade-badge');
       if (trBadgeEl) trBadgeEl.textContent = `${avInfo.label}師傅`;
+if (typeof autoSwitchQuickTradeRemarksByAvatarKey === 'function') autoSwitchQuickTradeRemarksByAvatarKey(avInfo.key, cleanName);
       document.getElementById('qwi-name').textContent = w.name;
       document.getElementById('qwi-wage').textContent = `日薪人工：HK$ ${Number(w.wage || 1500).toLocaleString()} / 工`;
       document.getElementById('qwi-bank').textContent = `WhatsApp 電話: ${w.phone || '未登記'}`;
