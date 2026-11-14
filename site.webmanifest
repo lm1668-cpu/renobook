@@ -1,0 +1,31 @@
+{
+  "name": "香港裝修師傅大本營 · 帳目寶",
+  "short_name": "帳目寶",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#142444",
+  "theme_color": "#142444",
+  "icons": [
+    {
+      "src": "/favicon-16x16.png",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-32x32.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.ico",
+      "sizes": "32x32 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
